@@ -21,7 +21,7 @@ import ClientForm from './components/ClientForm';
 import PriceSettings from './components/PriceSettings';
 import QuotationPrintView from './components/QuotationPrintView';
 
-import { Layers, Users, Sliders, FileText, Plus, CheckCircle, Calculator } from 'lucide-react';
+import { Layers, Users, Sliders, FileText, Plus, CheckCircle, Calculator, Smartphone, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -79,6 +79,40 @@ export default function App() {
   // UI state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'new_quotation' | 'clients' | 'prices'>('dashboard');
   const [printQuotation, setPrintQuotation] = useState<Quotation | null>(null);
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent browser from automatically showing launcher banner
+      e.preventDefault();
+      // Save prompt event state
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // If already in standalone mode, let's keep button hidden
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBtn(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User installation choice: ${outcome}`);
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
 
   // 2. Save state to localStorage automatically on changes
   useEffect(() => {
@@ -176,7 +210,16 @@ export default function App() {
           </div>
 
           {/* Quick Stats overview or prompt */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {showInstallBtn && (
+              <button
+                onClick={handleInstallApp}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-md"
+                title="Instalar aplicativo de orçamentos no celular ou computador"
+              >
+                <Smartphone size={15} /> Instalar Aplicativo
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('new_quotation')}
               className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm"
@@ -251,6 +294,27 @@ export default function App() {
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 <DashboardStats quotations={quotations} />
+
+                {/* PWA Install Promotion Banner */}
+                {showInstallBtn && (
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 shadow-xs border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-sm tracking-tight flex items-center gap-2">
+                        <Smartphone size={16} /> Instalar o App no seu Celular ou Computador
+                      </h3>
+                      <p className="text-[11px] text-emerald-100 max-w-xl leading-relaxed">
+                        Acesse instantaneamente pela tela inicial, com maior desempenho offline, menus rápidos para medições na obra e sincronização de tabelas em tempo real.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleInstallApp}
+                      className="bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-black px-4 py-2.5 rounded-lg shadow-xs transition-all pointer-events-auto cursor-pointer whitespace-nowrap self-start md:self-auto"
+                    >
+                      Instalar Agora
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-800">Orçamentos Recentes</h2>
                 </div>

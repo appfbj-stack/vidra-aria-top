@@ -163,57 +163,54 @@ export default function QuotationPrintView({
     try {
       // Capture the element in canvas format with higher scale for HD clarity
       const canvas = await html2canvas(element, {
-        scale: 2.2,
+        scale: 2.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 800,
         onclone: (clonedDoc) => {
-          // html2canvas fails with "Attempting to parse an unsupported color function oklch" or "oklab"
-          // We solve this by compiling all Document's stylesheets into style tags and replacing them with hsl
-          const styleSheetsContents: string[] = [];
-          
-          try {
-            for (let i = 0; i < document.styleSheets.length; i++) {
-              const sheet = document.styleSheets[i];
-              try {
-                if (sheet.cssRules) {
-                  const rList: string[] = [];
-                  for (let j = 0; j < sheet.cssRules.length; j++) {
-                    rList.push(sheet.cssRules[j].cssText);
-                  }
-                  styleSheetsContents.push(rList.join('\n'));
-                }
-              } catch (e) {
-                // Cross-origin issues can occur, fall back safely
-                console.warn("Could not read stylesheet rule programmatically", e);
-              }
-            }
-          } catch (err) {
-            console.error("Error reading style sheets", err);
-          }
+          // html2canvas fails with oklch and oklab.
+          // To prevent security blocks from accessing document.styleSheets cssRules,
+          // we inject standard hex variable overrides directly into the clone's document root
+          const newStyleTag = clonedDoc.createElement('style');
+          newStyleTag.textContent = `
+            :root, [data-theme] {
+              --color-orange-50: #fff7ed !important;
+              --color-orange-100: #ffedd5 !important;
+              --color-orange-200: #fed7aa !important;
+              --color-orange-300: #fdba74 !important;
+              --color-orange-400: #fb923c !important;
+              --color-orange-500: #f97316 !important;
+              --color-orange-600: #ea580c !important;
+              --color-orange-650: #ea580c !important;
+              --color-orange-700: #c2410c !important;
+              --color-orange-850: #7c2d12 !important;
+              --color-orange-900: #7c2d12 !important;
+              --color-orange-950: #431407 !important;
 
-          if (styleSheetsContents.length > 0) {
-            // Process and sanitize css rules
-            const cleanedStyles = styleSheetsContents.map(css => sanitizeCSSColorFunction(css));
-            
-            // Remove existing stylesheets from the cloned document to avoid crashes
-            const originalStylesAndLinks = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
-            originalStylesAndLinks.forEach(el => el.remove());
-            
-            // Inject the cleaned and compiled stylesheets in cloned document head
-            const newStyleTag = clonedDoc.createElement('style');
-            newStyleTag.textContent = cleanedStyles.join('\n');
-            clonedDoc.head.appendChild(newStyleTag);
-          } else {
-            // Fallback: search and replace in cloned <style> tags
-            const styles = clonedDoc.querySelectorAll('style');
-            styles.forEach(style => {
-              if (style.textContent) {
-                style.textContent = sanitizeCSSColorFunction(style.textContent);
-              }
-            });
-          }
+              --color-gray-50: #f9fafb !important;
+              --color-gray-100: #f3f4f6 !important;
+              --color-gray-150: #e5e7eb !important;
+              --color-gray-200: #e5e7eb !important;
+              --color-gray-300: #d1d5db !important;
+              --color-gray-400: #9ca3af !important;
+              --color-gray-500: #6b7280 !important;
+              --color-gray-600: #4b5563 !important;
+              --color-gray-700: #374151 !important;
+              --color-gray-800: #1f2937 !important;
+              --color-gray-900: #111827 !important;
+              --color-gray-950: #030712 !important;
+
+              --background: #ffffff !important;
+              --foreground: #111827 !important;
+            }
+            body, html {
+              background-color: #ffffff !important;
+              color: #111827 !important;
+              font-family: Arial, sans-serif !important;
+            }
+          `;
+          clonedDoc.head.appendChild(newStyleTag);
 
           // Check all inline style declarations for oklch, oklab, color-mix, or light-dark
           const inlineStyleEls = clonedDoc.querySelectorAll('[style*="oklch"], [style*="oklab"], [style*="color-mix"], [style*="light-dark"]');
@@ -226,7 +223,7 @@ export default function QuotationPrintView({
         }
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       
       const pdf = new jsPDF({
         orientation: 'p',
@@ -286,20 +283,20 @@ export default function QuotationPrintView({
             <button
               onClick={handleExtendAndExportPDF}
               disabled={isGeneratingPDF}
-              className="flex items-center gap-1.5 text-xs bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-bold py-2 px-3.5 rounded-lg shadow-sm transition-all cursor-pointer"
             >
               <FileDown size={14} className={isGeneratingPDF ? 'animate-bounce' : ''} />
-              {isGeneratingPDF ? 'Baixando...' : 'Salvar como PDF'}
+              {isGeneratingPDF ? 'Gerando PDF...' : 'Salvar como PDF'}
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-3 rounded-lg border border-gray-200 shadow-2xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-3.5 rounded-lg border border-gray-200 shadow-2xs transition-all cursor-pointer"
             >
-              <Printer size={14} /> Imprimir / PDF Manual
+              <Printer size={14} /> Imprimir / Salvar Manual
             </button>
             <button
               onClick={onClose}
-              className="flex items-center gap-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded-xl transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-xl transition-all cursor-pointer"
             >
               <X size={14} /> Fechar
             </button>
@@ -311,88 +308,103 @@ export default function QuotationPrintView({
           <div className="flex items-start gap-2.5 max-w-4xl">
             <span className="text-base select-none">💡</span>
             <div>
-              <p className="text-[11px] font-bold text-orange-900 leading-tight">Como salvar em formato PDF:</p>
+              <p className="text-[11px] font-bold text-orange-900 leading-tight">Melhores práticas para exportar o Orçamento:</p>
               <p className="text-[10px] text-orange-700 leading-relaxed mt-0.5">
-                Ao clicar no botão acima, na caixa de diálogo de impressão que aparecer, altere o destino de sua impressora para <strong className="text-orange-950 font-bold">"Salvar como PDF"</strong> ou <strong className="text-orange-950 font-bold">"Microsoft Print to PDF"</strong>. Habilite a caixa de seleção <strong className="text-orange-950 font-bold">"Gráficos de segundo plano"</strong> no menu de configurações para incluir as cores dos vidros e os croquis técnicos!
+                Clique em <strong className="text-orange-950 font-bold">"Salvar como PDF"</strong> para baixar o arquivo no seu dispositivo imediatamente. Caso prefira a opção <strong className="text-orange-950 font-bold">"Imprimir"</strong>, mude o destino para "Salvar como PDF" e lembre-se de ativar a caixa <strong className="text-orange-950 font-bold">"Gráficos de segundo plano"</strong> para incluir cores e desenhos na versão final!
               </p>
             </div>
           </div>
         </div>
 
         {/* Printable area */}
-        <div className="flex-1 overflow-y-auto p-10 bg-white print:overflow-visible print:p-0" id="print-sheet">
-          <div id="pdf-content" className="max-w-[800px] mx-auto text-gray-800 space-y-8 font-sans p-6 bg-white">
+        <div className="flex-1 overflow-y-auto p-8 bg-white print:overflow-visible print:p-0" id="print-sheet">
+          <div id="pdf-content" className="max-w-[780px] mx-auto text-gray-800 space-y-6 font-sans p-6 bg-white border border-gray-100 rounded-lg shadow-2xs print:border-none print:shadow-none">
             
+            {/* Top decorative bar */}
+            <div className="bg-gradient-to-r from-orange-500 to-amber-600 h-2.5 rounded-t-md -mx-6 -mt-6 mb-4"></div>
+
             {/* 1. Letterhead Header */}
-            <div className="flex justify-between items-start border-b-2 border-gray-100 pb-6">
+            <div className="flex justify-between items-start border-b border-gray-200 pb-5">
               <div className="flex items-start gap-4">
                 {companySettings.logoUrl && (
                   <img
                     src={companySettings.logoUrl}
                     alt="Logo"
-                    className="max-h-16 max-w-[150px] object-contain rounded-lg border border-gray-150 p-1 bg-white print:border-none"
+                    className="max-h-16 max-w-[140px] object-contain rounded-lg border border-gray-200 p-1 bg-white"
                     referrerPolicy="no-referrer"
                   />
                 )}
-                <div>
-                  <h1 className="text-xl font-black text-gray-950 tracking-tight uppercase">
+                <div className="border-l-2 border-orange-500 pl-3">
+                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight uppercase leading-none mb-1">
                     {companySettings.name || 'Vidraçaria & Cia'}
                   </h1>
-                  <p className="text-[10.5px] text-gray-500 mt-1 max-w-[320px]">
-                    {companySettings.slogan || 'Soluções sob medida em vidros temperados, esquadrias e ferragens.'}
+                  <p className="text-[10px] uppercase font-bold text-orange-600 tracking-wider">
+                    {companySettings.slogan || 'Serralheria & Vidros sob Medida'}
                   </p>
-                  <div className="text-[10.5px] text-gray-500 mt-2 space-y-0.5">
-                    <p>WhatsApp: <strong className="text-gray-700">{companySettings.phone || '(11) 99999-8888'}</strong></p>
-                    <p>Email: <strong className="text-gray-700">{companySettings.email || 'contato@vidracariacia.com.br'}</strong></p>
-                    {companySettings.cnpj && <p>CNPJ: <strong className="text-gray-700">{companySettings.cnpj}</strong></p>}
+                  <div className="text-[10px] text-slate-500 mt-2.5 space-y-0.5">
+                    <p>WhatsApp: <strong className="text-slate-800">{companySettings.phone || '(11) 99999-8888'}</strong></p>
+                    <p>E-mail: <strong className="text-slate-800">{companySettings.email || 'contato@vidracariacia.com.br'}</strong></p>
+                    {companySettings.cnpj && <p>CNPJ: <strong className="text-slate-800">{companySettings.cnpj}</strong></p>}
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="inline-block bg-orange-50 text-orange-850 text-[10px] font-bold px-2.5 py-1 rounded-sm uppercase mb-3 print:border print:border-orange-500">
-                  {quotation.status === 'pendente' ? 'Orçamento Pendente' : 
-                   quotation.status === 'aprovado' ? 'Orçamento Aprovado' : 
-                   quotation.status === 'rejeitado' ? 'Orçamento Recusado' : 'Serviço Concluído'}
-                </span>
-                <h2 className="text-lg font-black text-orange-650 tracking-tight">{quotation.number}</h2>
-                <div className="text-[10.5px] text-gray-500 mt-2 space-y-0.5">
-                  <p>Data de Emissão: <strong className="text-gray-700">{new Date(quotation.date).toLocaleDateString('pt-BR')}</strong></p>
-                  <p>Validade até: <strong className="text-gray-700">{new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</strong></p>
+              
+              <div className="text-right space-y-1">
+                <div>
+                  <span className={`inline-block text-[9px] font-bold px-3 py-1 rounded-sm uppercase ${
+                    quotation.status === 'aprovado' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                    quotation.status === 'pendente' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                    quotation.status === 'rejeitado' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 
+                    'bg-slate-50 text-slate-800 border border-slate-200'
+                  }`}>
+                    {quotation.status === 'pendente' ? 'Orçamento Pendente' : 
+                     quotation.status === 'aprovado' ? 'Orçamento Aprovado' : 
+                     quotation.status === 'rejeitado' ? 'Orçamento Recusado' : 'Serviço Concluído'}
+                  </span>
+                </div>
+                <h2 className="text-lg font-black text-orange-600 tracking-tight leading-normal">{quotation.number}</h2>
+                <div className="text-[10px] text-slate-500 space-y-0.5">
+                  <p>Emissão: <strong className="text-slate-800">{new Date(quotation.date).toLocaleDateString('pt-BR')}</strong></p>
+                  <p>Validade: <strong className="text-slate-800">{new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</strong></p>
                 </div>
               </div>
             </div>
 
             {/* 2. Client and Location Info */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <h3 className="font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Cliente / Destinatário</h3>
-                <p className="font-semibold text-gray-900 text-sm">{quotation.client.name}</p>
-                <p className="text-gray-500 mt-1">Contato: {quotation.client.phone}</p>
-                {quotation.client.email && <p className="text-gray-500">Email: {quotation.client.email}</p>}
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 grid grid-cols-2 gap-4 text-xs">
+              <div className="border-r border-slate-200 pr-4">
+                <h3 className="font-bold text-slate-500 mb-1.5 uppercase tracking-wider text-[9px]">Cliente / Destinatário</h3>
+                <p className="font-bold text-slate-900 text-sm">{quotation.client.name}</p>
+                <p className="text-slate-500 mt-1">Telefone: <span className="text-slate-900 font-medium">{quotation.client.phone}</span></p>
+                {quotation.client.email && <p className="text-slate-500">Email: <span className="text-slate-900 font-medium">{quotation.client.email}</span></p>}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Endereço de Instalação</h3>
-                <p className="text-gray-900 font-medium leading-relaxed">
-                  {quotation.client.address || 'Não especificado (Retirada na loja)'}
+              <div className="pl-2">
+                <h3 className="font-bold text-slate-500 mb-1.5 uppercase tracking-wider text-[9px]">Endereço de Instalação</h3>
+                <p className="text-slate-900 font-semibold leading-relaxed">
+                  {quotation.client.address || 'Não especificado (Retirada em Loja)'}
                 </p>
               </div>
             </div>
 
-            {/* 3. Items and Services Table */}
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Especificações dos Itens e Serviços</h3>
-              <table className="w-full text-left border-collapse text-xs">
+            {/* 3. Items and Services Table & Sketches */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Especificações dos Itens</h3>
+                <span className="text-[10px] font-semibold text-slate-400">Total de {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}</span>
+              </div>
+              
+              <table className="w-full text-left border-collapse text-xs border border-slate-150 rounded-lg overflow-hidden">
                 <thead>
-                  <tr className="border-b-2 border-gray-200 text-gray-600 font-semibold bg-gray-50">
+                  <tr className="bg-slate-800 text-white font-bold border-b border-slate-800">
                     <th className="py-2.5 px-3 w-10 text-center">Qtd</th>
-                    <th className="py-2.5 px-3">Ambiente / Descrição</th>
-                    <th className="py-2.5 px-3">Vidro & Acabamento</th>
+                    <th className="py-2.5 px-3">Local / Descrição do Item</th>
+                    <th className="py-2.5 px-3">Vidro & Acabamentos</th>
                     <th className="py-2.5 px-3 text-center">Medidas (m)</th>
-                    <th className="py-2.5 px-3 text-right">Preço Un.</th>
-                    <th className="py-2.5 px-3 text-right">Total</th>
+                    <th className="py-2.5 px-3 text-right">Valor Un.</th>
+                    <th className="py-2.5 px-3 text-right">Valor Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
+                <tbody className="divide-y divide-slate-150 text-slate-700 bg-white">
                   {quotation.items.map((item, index) => {
                     const gPrice = glassPrices.find(g => g.id === item.glassId);
                     const gColor = glassColors.find(c => c.id === item.colorId);
@@ -400,33 +412,34 @@ export default function QuotationPrintView({
                     const aProfile = aluminumProfiles.find(a => a.id === item.aluminumId);
 
                     return (
-                      <tr key={item.id} className="align-top hover:bg-gray-50/20">
-                        <td className="py-3 px-3 font-semibold text-center">{item.quantity}</td>
-                        <td className="py-3 px-3">
-                          <p className="font-bold text-gray-900">{item.description}</p>
-                          <div className="text-[10px] text-gray-400 mt-1 space-y-0.5">
-                            {kHardware && <p>• Ferragem: {kHardware.name}</p>}
-                            {aProfile && <p>• Alumínio: {aProfile.name} ({item.aluminumMeters}m)</p>}
+                      <tr key={item.id} className="align-top hover:bg-slate-50/20 even:bg-slate-50/10">
+                        <td className="py-3 px-3 font-bold text-center text-slate-900">{item.quantity}</td>
+                        <td className="py-3 px-3 space-y-1">
+                          <p className="font-extrabold text-slate-900">{item.description}</p>
+                          <div className="text-[10px] text-slate-500 pl-1 space-y-0.5">
+                            {kHardware && <p>• Ferragens: <span className="font-medium text-slate-700">{kHardware.name}</span></p>}
+                            {aProfile && <p>• Alumínio: <span className="font-medium text-slate-700">{aProfile.name} ({item.aluminumMeters}m)</span></p>}
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <div className="font-medium text-gray-800">
-                            {gPrice?.name} ({gColor?.name})
+                          <div className="font-semibold text-slate-800 leading-tight">
+                            {gPrice?.name} 
                           </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">Cor: {gColor?.name || 'Incolor'}</div>
                           {item.useRoundedArea && (
-                            <span className="text-[9px] bg-amber-50 text-amber-800 font-semibold px-1 rounded-sm border border-amber-200/50">
-                              Área arredondada (passo 5cm)
+                            <span className="inline-block mt-1 text-[8px] bg-amber-50 text-amber-800 font-bold px-1 rounded-sm border border-amber-200/50">
+                              M² Arredondado (múltiplo 5cm)
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-center">
-                          <p className="font-medium">{item.width.toFixed(2)} x {item.height.toFixed(2)} m</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">({formatArea(item.calculatedArea)})</p>
+                        <td className="py-3 px-3 text-center space-y-0.5">
+                          <p className="font-bold text-slate-800">{item.width.toFixed(2)} x {item.height.toFixed(2)} m</p>
+                          <p className="text-[10px] text-slate-500">({formatArea(item.calculatedArea)})</p>
                         </td>
-                        <td className="py-3 px-3 text-right font-medium">
+                        <td className="py-3 px-3 text-right font-medium text-slate-600">
                           {formatCurrency(item.itemTotal / item.quantity)}
                         </td>
-                        <td className="py-3 px-3 text-right font-bold text-gray-900">
+                        <td className="py-3 px-3 text-right font-extrabold text-slate-900">
                           {formatCurrency(item.itemTotal)}
                         </td>
                       </tr>
@@ -437,15 +450,16 @@ export default function QuotationPrintView({
             </div>
 
             {/* 3.5 Detailed Technical Sketches */}
-            <div className="pt-6 border-t border-gray-150">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Desenhos Técnicos e Croquis de Vidros</h3>
+            <div className="pt-5 border-t border-slate-200">
+              <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-3">Desenhos Técnicos e Projetos</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {quotation.items.map((item, index) => {
                   const gColor = glassColors.find(c => c.id === item.colorId);
                   return (
-                    <div key={item.id} className="print:break-inside-avoid">
+                    <div key={item.id} className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50" style={{ pageBreakInside: 'avoid' }}>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-1">Item {index + 1}</p>
                       <QuotationSketch
-                        description={`Item ${index + 1}: ${item.description}`}
+                        description={item.description}
                         width={item.width}
                         height={item.height}
                         glassColorName={gColor?.name || 'Incolor'}
@@ -458,22 +472,26 @@ export default function QuotationPrintView({
             </div>
 
             {/* 4. Financial Calculations Summary */}
-            <div className="flex justify-between items-start pt-4 border-t border-gray-100">
-              <div className="max-w-[400px]">
-                {quotation.notes && (
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-600 mb-1.5 uppercase">Observações do Contrato</h4>
-                    <p className="text-[11px] text-gray-500 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100 italic">
+            <div className="flex justify-between items-start pt-5 border-t border-slate-200 gap-8" style={{ pageBreakInside: 'avoid' }}>
+              <div className="flex-1 max-w-[420px]">
+                {quotation.notes ? (
+                  <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-200">
+                    <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">Observações Adicionais</h4>
+                    <p className="text-[10.5px] text-slate-600 leading-relaxed italic">
                       "{quotation.notes}"
                     </p>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-slate-400 max-w-[300px]">
+                    <p>Este orçamento é um documento comercial provisório. Caso aprovado, nossa equipe técnica confirmará todas as medidas in loco.</p>
                   </div>
                 )}
               </div>
               
-              <div className="w-[280px] bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs text-right space-y-2">
-                <div className="flex justify-between text-gray-500">
-                  <span>Subtotal Bruto:</span>
-                  <span className="font-medium">
+              <div className="w-[260px] bg-slate-50 rounded-lg p-3.5 border border-slate-200 text-xs text-right space-y-1.5">
+                <div className="flex justify-between text-slate-500">
+                  <span>Subtotal dos Itens:</span>
+                  <span className="font-semibold text-slate-800">
                     {formatCurrency(
                       quotation.items.reduce((acc, i) => acc + i.itemTotal, 0)
                     )}
@@ -481,21 +499,21 @@ export default function QuotationPrintView({
                 </div>
 
                 {quotation.surchargeAmount > 0 && (
-                  <div className="flex justify-between text-amber-700">
+                  <div className="flex justify-between text-amber-700 font-medium">
                     <span>Taxas / Adicionais:</span>
-                    <span className="font-semibold">+{formatCurrency(quotation.surchargeAmount)}</span>
+                    <span>+{formatCurrency(quotation.surchargeAmount)}</span>
                   </div>
                 )}
 
                 {quotation.discountAmount > 0 && (
-                  <div className="flex justify-between text-green-700">
-                    <span>Desconto Concedido:</span>
-                    <span className="font-semibold">-{formatCurrency(quotation.discountAmount)}</span>
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>Desconto Aplicado:</span>
+                    <span>-{formatCurrency(quotation.discountAmount)}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between pt-2 border-t border-gray-200 text-sm">
-                  <span className="font-bold text-gray-900">Valor Líquido:</span>
+                <div className="flex justify-between pt-2 border-t border-slate-200 text-sm items-center">
+                  <span className="font-bold text-slate-900">VALOR TOTAL LÍQUIDO:</span>
                   <span className="font-black text-orange-600 text-base">
                     {formatCurrency(quotation.total)}
                   </span>
@@ -504,30 +522,35 @@ export default function QuotationPrintView({
             </div>
 
             {/* 5. Terms / Signatures */}
-            <div className="pt-10 space-y-8 text-[11px] text-gray-500 border-t border-gray-100">
-              <div className="leading-relaxed">
-                <p className="font-semibold text-gray-600 mb-1">Termos e Condições para Execução:</p>
-                <ol className="list-decimal pl-4.5 space-y-1">
-                  <li>Após aceitação do orçamento, será realizada a medição técnica de precisão no local pelo nosso consultor.</li>
-                  <li>O prazo estimado de entrega começa a contar a partir da medição confirmada e aprovação do projeto executivo.</li>
-                  <li>Garantia regulamentar de 1 ano para defeitos de instalação nos acessórios e perfis de vedação.</li>
-                  <li>Peças de vidro temperado não admitem novos cortes, furos ou ajustes após o processo de têmpera.</li>
-                </ol>
+            <div className="pt-6 space-y-6 text-[10px] text-slate-500 border-t border-slate-200" style={{ pageBreakInside: 'avoid' }}>
+              <div className="leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                <p className="font-bold text-slate-700 mb-1">Termos Comerciais e Garantias:</p>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  <li>Nossos vidros temperados seguem rigorosamente a norma <strong className="text-slate-700">ABNT NBR 14698</strong> de segurança.</li>
+                  <li>Garantia contra defeito de vedação de 90 dias. Acessórios e ferragens possuem garantia de 6 meses.</li>
+                  <li>A vidraçaria não se responsabiliza por problemas estruturais pré-existentes na alvenaria ou esquadrias limítrofes.</li>
+                  <li>Prazo médio para instalação após medição de engenharia no local: 10 a 15 dias úteis.</li>
+                </ul>
               </div>
 
               {/* Signatures Columns */}
-              <div className="grid grid-cols-2 gap-10 pt-10">
+              <div className="grid grid-cols-2 gap-12 pt-8">
                 <div className="text-center">
-                  <div className="border-b border-gray-300 h-10 w-4/5 mx-auto"></div>
-                  <p className="mt-2 font-medium text-gray-700">{quotation.client.name}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Assinatura do Cliente (Aceite)</p>
+                  <div className="border-b border-slate-300 h-9 w-4/5 mx-auto"></div>
+                  <p className="mt-2 font-bold text-slate-800">{quotation.client.name}</p>
+                  <p className="text-[9px] text-slate-400">Assinatura de Aceite (Cliente)</p>
                 </div>
                 <div className="text-center">
-                  <div className="border-b border-gray-300 h-10 w-4/5 mx-auto"></div>
-                  <p className="mt-2 font-medium text-gray-700">Responsável {companySettings.name || 'Vidraçaria & Cia'}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Autorizado Técnico</p>
+                  <div className="border-b border-slate-300 h-9 w-4/5 mx-auto"></div>
+                  <p className="mt-2 font-bold text-slate-800">{companySettings.name || 'Vidraçaria & Cia'}</p>
+                  <p className="text-[9px] text-slate-400">Responsável Técnico / Autorizado</p>
                 </div>
               </div>
+            </div>
+
+            {/* Footer metadata system code */}
+            <div className="text-center text-[8px] text-slate-400 pt-6 border-t border-slate-100">
+              Sistema de Orçamentos Vidraçaria • Proposta técnica oficial gerada digitalmente em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
             </div>
 
           </div>
