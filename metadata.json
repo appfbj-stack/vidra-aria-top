@@ -1,0 +1,6 @@
+{
+  "name": "Orçamentos Vidraçaria",
+  "description": "Sistema completo para gestão de clientes, precificação de vidros, alumínios e ferragens, e geração de orçamentos profissionais para vidraçarias.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
