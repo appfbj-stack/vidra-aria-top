@@ -360,8 +360,8 @@ export default function PriceSettings({
 
         {/* Table list */}
         {activeSubTab !== 'header' && (
-          <div className="border border-gray-100 rounded-xl overflow-hidden mb-6 bg-white shadow-xs">
-            <table className="w-full text-left border-collapse text-sm">
+          <div className="border border-gray-100 rounded-xl overflow-hidden mb-6 bg-white shadow-xs overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm min-w-[500px]">
               <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                 <tr>
                   <th className="py-3 px-4">Nome / Descrição</th>

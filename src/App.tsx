@@ -270,14 +270,14 @@ export default function App() {
             {/* View 2: Calculator/Builder */}
             {activeTab === 'new_quotation' && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-gray-100 gap-3">
                   <div>
                     <h2 className="text-xl font-black text-gray-800">Calculadora & Emissor de Orçamentos</h2>
                     <p className="text-xs text-gray-500 mt-0.5">Selecione o cliente, adicione os vidros e ferragens, ajuste descontos e salve em segundos.</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('dashboard')}
-                    className="text-xs text-gray-500 hover:text-gray-800 py-1.5 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg cursor-pointer font-semibold"
+                    className="text-xs text-gray-500 hover:text-gray-800 py-1.5 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg cursor-pointer font-semibold whitespace-nowrap self-start sm:self-auto"
                   >
                     Voltar p/ o Painel
                   </button>

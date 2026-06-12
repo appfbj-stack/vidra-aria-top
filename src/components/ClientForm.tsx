@@ -80,7 +80,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="client-panel">
       {/* Sidebar: Client List */}
-      <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-xs p-5 flex flex-col h-[650px] overflow-hidden">
+      <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-xs p-5 flex flex-col lg:h-[650px] h-[400px] overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800">Clientes ({clients.length})</h2>
           <button
@@ -157,7 +157,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
       </div>
 
       {/* Main content: Client Editor details */}
-      <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-xs p-6 h-[650px] overflow-y-auto">
+      <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-xs p-6 lg:h-[650px] h-auto overflow-y-auto">
         <AnimatePresence mode="wait">
           {showForm ? (
             <motion.div

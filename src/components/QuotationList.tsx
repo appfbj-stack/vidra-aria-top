@@ -132,64 +132,150 @@ export default function QuotationList({
             <p className="text-sm">Nenhum orçamento encontrado nesta pesquisa.</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse text-sm">
-            <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-5">Código</th>
-                <th className="py-3 px-5">Cliente</th>
-                <th className="py-3 px-5">Duração / Validade</th>
-                <th className="py-3 px-5 text-center">Itens</th>
-                <th className="py-3 px-5 text-right">Valor Total</th>
-                <th className="py-3 px-5 text-center">Status</th>
-                <th className="py-3 px-5 text-center w-52">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-700 bg-white">
+          <>
+            {/* Desktop and Tablet view Table */}
+            <table className="hidden md:table w-full text-left border-collapse text-sm">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                <tr>
+                  <th className="py-3 px-5">Código</th>
+                  <th className="py-3 px-5">Cliente</th>
+                  <th className="py-3 px-5">Duração / Validade</th>
+                  <th className="py-3 px-5 text-center">Itens</th>
+                  <th className="py-3 px-5 text-right">Valor Total</th>
+                  <th className="py-3 px-5 text-center">Status</th>
+                  <th className="py-3 px-5 text-center w-52">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-700 bg-white">
+                {filteredQuotations.map((quotation) => (
+                  <tr key={quotation.id} className="hover:bg-gray-50/40 transition-colors">
+                    <td className="py-4 px-5 font-bold text-orange-600">
+                      {quotation.number}
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="font-semibold text-gray-800">{quotation.client.name}</div>
+                      <div className="text-xs text-gray-400 mt-1">{quotation.client.phone}</div>
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Calendar size={12} className="text-gray-400" />
+                        <span>{new Date(quotation.date).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-1">Val: {new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</div>
+                    </td>
+                    <td className="py-4 px-5 text-center font-medium text-gray-600">
+                      {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}
+                    </td>
+                    <td className="py-4 px-5 text-right font-black text-gray-900">
+                      {formatCurrency(quotation.total)}
+                    </td>
+                    <td className="py-4 px-5 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(quotation.status)}`}>
+                        {getStatusIcon(quotation.status)}
+                        <span className="capitalize">{quotation.status}</span>
+                      </span>
+                    </td>
+                    <td className="py-4 px-5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        
+                        {/* Open print layout */}
+                        <button
+                          onClick={() => onSelectPrint(quotation)}
+                          className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold px-2 py-1.5 rounded-lg transition-all cursor-pointer"
+                          title="Ver e Imprimir"
+                        >
+                          <Eye size={13} /> Imprimir
+                        </button>
+
+                        {/* Status selectors list */}
+                        <select
+                          value={quotation.status}
+                          onChange={(e) => onUpdateStatus(quotation.id, e.target.value as QuotationStatus)}
+                          className="text-xs bg-gray-50 border border-gray-200 text-gray-700 font-semibold rounded-lg px-2 py-1.5 hover:bg-white focus:outline-hidden cursor-pointer"
+                        >
+                          <option value="pendente">Pendente</option>
+                          <option value="aprovado">Aprovado</option>
+                          <option value="rejeitado">Recusado</option>
+                          <option value="concluido">Concluído</option>
+                        </select>
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => {
+                            if (confirm(`Tem certeza que deseja excluir permanentemente o orçamento ${quotation.number}?`)) {
+                              onDeleteQuotation(quotation.id);
+                            }
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer border border-transparent hover:border-red-100"
+                          title="Excluir Orçamento"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Mobile Card Layout */}
+            <div className="block md:hidden divide-y divide-gray-100 bg-white">
               {filteredQuotations.map((quotation) => (
-                <tr key={quotation.id} className="hover:bg-gray-50/40 transition-colors">
-                  <td className="py-4 px-5 font-bold text-orange-600">
-                    {quotation.number}
-                  </td>
-                  <td className="py-4 px-5">
-                    <div className="font-semibold text-gray-800">{quotation.client.name}</div>
-                    <div className="text-xs text-gray-400 mt-1">{quotation.client.phone}</div>
-                  </td>
-                  <td className="py-4 px-5">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <Calendar size={12} className="text-gray-400" />
-                      <span>{new Date(quotation.date).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <div className="text-[10px] text-gray-400 mt-1">Val: {new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</div>
-                  </td>
-                  <td className="py-4 px-5 text-center font-medium text-gray-600">
-                    {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}
-                  </td>
-                  <td className="py-4 px-5 text-right font-black text-gray-900">
-                    {formatCurrency(quotation.total)}
-                  </td>
-                  <td className="py-4 px-5 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(quotation.status)}`}>
+                <div key={quotation.id} className="p-4.5 space-y-3.5">
+                  {/* Header: Code & Status Badge */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-orange-600 text-sm">{quotation.number}</span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeClass(quotation.status)}`}>
                       {getStatusIcon(quotation.status)}
                       <span className="capitalize">{quotation.status}</span>
                     </span>
-                  </td>
-                  <td className="py-4 px-5 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      
-                      {/* Open print layout */}
+                  </div>
+
+                  {/* Customer Info */}
+                  <div>
+                    <div className="font-semibold text-gray-800 text-sm">{quotation.client.name}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{quotation.client.phone}</div>
+                  </div>
+
+                  {/* Dates & Quantities summary */}
+                  <div className="flex justify-between items-center text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg border border-gray-150">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={12} className="text-gray-400" />
+                        <span>{new Date(quotation.date).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400">Val: {new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9px] text-gray-400 uppercase font-semibold block">Peças</span>
+                      <span className="font-bold text-gray-700">
+                        {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Price & Primary quick operations */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-gray-100">
+                    <div>
+                      <span className="text-[9px] text-gray-400 uppercase font-bold block">Valor Total Líquido</span>
+                      <strong className="font-black text-gray-950 text-base">{formatCurrency(quotation.total)}</strong>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      {/* Print button */}
                       <button
                         onClick={() => onSelectPrint(quotation)}
-                        className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-semibold px-2 py-1.5 rounded-lg transition-all cursor-pointer"
+                        className="flex items-center gap-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer h-8"
                         title="Ver e Imprimir"
                       >
                         <Eye size={13} /> Imprimir
                       </button>
 
-                      {/* Status selectors list */}
+                      {/* Status selectors dropdown */}
                       <select
                         value={quotation.status}
                         onChange={(e) => onUpdateStatus(quotation.id, e.target.value as QuotationStatus)}
-                        className="text-xs bg-gray-50 border border-gray-200 text-gray-700 font-semibold rounded-lg px-2 py-1.5 hover:bg-white focus:outline-hidden cursor-pointer"
+                        className="text-xs bg-gray-50 border border-gray-200 text-gray-700 font-semibold rounded-lg px-2 h-8 hover:bg-white focus:outline-hidden cursor-pointer"
                       >
                         <option value="pendente">Pendente</option>
                         <option value="aprovado">Aprovado</option>
@@ -197,24 +283,24 @@ export default function QuotationList({
                         <option value="concluido">Concluído</option>
                       </select>
 
-                      {/* Delete */}
+                      {/* Delete icon button */}
                       <button
                         onClick={() => {
                           if (confirm(`Tem certeza que deseja excluir permanentemente o orçamento ${quotation.number}?`)) {
                             onDeleteQuotation(quotation.id);
                           }
                         }}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer border border-transparent hover:border-red-100"
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer border border-transparent hover:border-red-100 h-8 w-8 flex items-center justify-center bg-gray-50"
                         title="Excluir Orçamento"
                       >
                         <Trash2 size={13} />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>
