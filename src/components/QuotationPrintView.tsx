@@ -8,7 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Quotation, GlassPrice, GlassColor, HardwareKit, AluminumProfile, CompanySettings } from '../types';
 import { formatCurrency, formatArea } from '../utils';
-import { Printer, X, Download, FileText, FileDown, CheckCircle } from 'lucide-react';
+import { Printer, X, Download, FileText, FileDown, CheckCircle, MessageSquare } from 'lucide-react';
 import QuotationSketch from './QuotationSketch';
 
 interface QuotationPrintViewProps {
@@ -32,9 +32,46 @@ export default function QuotationPrintView({
 }: QuotationPrintViewProps) {
   
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [compactLayout, setCompactLayout] = useState(true);
+  const [includeSketches, setIncludeSketches] = useState(true);
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleWhatsAppShare = () => {
+    const subtotal = quotation.items.reduce((acc, i) => acc + i.itemTotal, 0);
+    // Clean telephone number of non-numeric characters
+    let cleanedPhone = quotation.client.phone.replace(/\D/g, '');
+    if (cleanedPhone && (cleanedPhone.length === 10 || cleanedPhone.length === 11)) {
+      cleanedPhone = '55' + cleanedPhone;
+    }
+
+    const itemsSummary = quotation.items
+      .map(item => `• *${item.quantity}x* ${item.description} _(${item.width.toFixed(2)}x${item.height.toFixed(2)}m)_`)
+      .join('\n');
+
+    const totalStr = formatCurrency(quotation.total);
+    const subtotalStr = formatCurrency(subtotal);
+    const discountStr = quotation.discountAmount > 0 ? `\n- Desconto: ${formatCurrency(quotation.discountAmount)}` : '';
+    const surchargeStr = quotation.surchargeAmount > 0 ? `\n- Taxas/Adicionais: ${formatCurrency(quotation.surchargeAmount)}` : '';
+
+    const message = `*ORÇAMENTO - ${companySettings.name || 'Vidraçaria'}*\n` +
+      `Orçamento Nº: *${quotation.number}*\n` +
+      `Cliente: *${quotation.client.name}*\n` +
+      `Data de Emissão: *${new Date(quotation.date).toLocaleDateString('pt-BR')}*\n` +
+      `Validade da Proposta: *${new Date(quotation.validUntil).toLocaleDateString('pt-BR')}*\n\n` +
+      `*Descrição dos Itens:* \n${itemsSummary}\n\n` +
+      `*Resumo Financeiro:* \n` +
+      `- Subtotal: ${subtotalStr}` + 
+      surchargeStr +
+      discountStr + `\n` +
+      `*VALOR TOTAL LÍQUIDO: ${totalStr}*\n\n` +
+      (quotation.notes ? `Observações: _${quotation.notes}_\n\n` : '') +
+      `Agradecemos a sua preferência! Se tiver alguma dúvida ou desejar aprovar, basta nos responder por aqui. Ficamos à disposição para agendar a medição final in loco! ⚒️`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanedPhone}&text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const handleExtendAndExportPDF = async () => {
@@ -47,11 +84,9 @@ export default function QuotationPrintView({
     const sanitizeCSSColorFunction = (cssText: string): string => {
       if (!cssText) return '';
       
-      // 1. First pre-emptively rewrite common modern Tailwind color variables to safe fallbacks
-      // This ensures we don't have to parse too complex nested variable scenarios.
       let result = cssText;
 
-      // 2. Handle oklch and oklab with balanced parentheses matching (up to 1 level of nested parentheses)
+      // Handle oklch and oklab with balanced parentheses matching
       const colorRegex = /(oklch|oklab)\(([^()]*|\([^()]*\))*\)/gi;
       result = result.replace(colorRegex, (match, type) => {
         try {
@@ -61,7 +96,6 @@ export default function QuotationPrintView({
           
           const content = match.slice(openParenIdx + 1, closeParenIdx).trim();
           
-          // Separate primary values and alpha opacity parts on the '/' separator
           let mainContent = content;
           let alphaStr = '';
           const slashIdx = content.indexOf('/');
@@ -72,7 +106,6 @@ export default function QuotationPrintView({
           
           const parts = mainContent.split(/[\s,]+/).filter(Boolean);
           if (parts.length < 3) {
-            // Safe general color fallback depending on context keywords
             const lowerMatch = match.toLowerCase();
             if (lowerMatch.includes('orange') || lowerMatch.includes('amber')) return '#ea580c';
             if (lowerMatch.includes('slate') || lowerMatch.includes('gray')) return '#475569';
@@ -81,7 +114,6 @@ export default function QuotationPrintView({
           
           const [p1, p2, p3] = parts;
           
-          // Strict fallback check: if any value relies on modern CSS variables/calc, supply high-quality visual fallbacks
           if (p1.includes('var') || p2.includes('var') || p3.includes('var') ||
               p1.includes('calc') || p2.includes('calc') || p3.includes('calc')) {
             const lowerMatch = match.toLowerCase();
@@ -99,10 +131,8 @@ export default function QuotationPrintView({
           if (type.toLowerCase() === 'oklch') {
             const chroma = parseFloat(p2);
             hue = parseFloat(p3);
-            // Translate chroma to HSL saturation approximation
             saturation = Math.min(100, Math.max(0, chroma * 250));
           } else {
-            // oklab
             const aVal = parseFloat(p2);
             const bVal = parseFloat(p3);
             const chroma = Math.sqrt(aVal * aVal + bVal * bVal);
@@ -118,7 +148,6 @@ export default function QuotationPrintView({
           
           if (alphaStr) {
             if (alphaStr.includes('var') || alphaStr.includes('calc')) {
-              // Ignore complex alpha variables and just render opaque
               return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
             }
             const alphaVal = alphaStr.endsWith('%') ? parseFloat(alphaStr) / 100 : parseFloat(alphaStr);
@@ -130,12 +159,11 @@ export default function QuotationPrintView({
             return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
           }
         } catch (e) {
-          console.warn("Could not process oklch/oklab color rule direct fallback applied:", e);
+          console.warn("Could not process color rule:", e);
           return '#888888';
         }
       });
 
-      // 3. Handle color-mix function calls safely
       const colorMixRegex = /color-mix\(([^()]*|\([^()]*\))*\)/gi;
       result = result.replace(colorMixRegex, (match) => {
         const lower = match.toLowerCase();
@@ -144,7 +172,6 @@ export default function QuotationPrintView({
         return '#888888';
       });
 
-      // 4. Handle light-dark function calls safely (always prefer the first/light color)
       const lightDarkRegex = /light-dark\(([^()]*|\([^()]*\))*\)/gi;
       result = result.replace(lightDarkRegex, (match) => {
         try {
@@ -160,18 +187,50 @@ export default function QuotationPrintView({
       return result;
     };
 
+    const generatePdfFromCanvas = (canvasObj: HTMLCanvasElement) => {
+      const imgData = canvasObj.toDataURL('image/jpeg', 0.95);
+      
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
+      
+      // Calculate single-page bounding boxes to completely avoid multi-page overflow
+      let printWidth = pdfWidth;
+      let printHeight = (canvasObj.height * pdfWidth) / canvasObj.width;
+      
+      if (printHeight > pdfHeight) {
+        printHeight = pdfHeight;
+        printWidth = (canvasObj.width * pdfHeight) / canvasObj.height;
+      }
+      
+      const xOffset = (pdfWidth - printWidth) / 2;
+      
+      pdf.addImage(imgData, 'JPEG', xOffset, 0, printWidth, printHeight, undefined, 'FAST');
+      
+      const clientNameClean = quotation.client.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .toLowerCase();
+      
+      const fileName = `orcamento_${quotation.number}_${clientNameClean}.pdf`;
+      pdf.save(fileName);
+    };
+
     try {
-      // Capture the element in canvas format with higher scale for HD clarity
+      // First attempt with premium configurations (CORS enabled for high-fidelity rendering)
       const canvas = await html2canvas(element, {
-        scale: 2.5,
+        scale: 2.2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 800,
         onclone: (clonedDoc) => {
-          // html2canvas fails with oklch and oklab.
-          // To prevent security blocks from accessing document.styleSheets cssRules,
-          // we inject standard hex variable overrides directly into the clone's document root
           const newStyleTag = clonedDoc.createElement('style');
           newStyleTag.textContent = `
             :root, [data-theme] {
@@ -212,7 +271,6 @@ export default function QuotationPrintView({
           `;
           clonedDoc.head.appendChild(newStyleTag);
 
-          // Check all inline style declarations for oklch, oklab, color-mix, or light-dark
           const inlineStyleEls = clonedDoc.querySelectorAll('[style*="oklch"], [style*="oklab"], [style*="color-mix"], [style*="light-dark"]');
           inlineStyleEls.forEach((el) => {
             const htmlEl = el as HTMLElement;
@@ -223,46 +281,50 @@ export default function QuotationPrintView({
         }
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
-      
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pdfHeight;
-
-      // Handle multi-page content cleanly by splitting page height bounds
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pdfHeight;
-      }
-      
-      const clientNameClean = quotation.client.name
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .toLowerCase();
-      
-      const fileName = `orcamento_${quotation.number}_${clientNameClean}.pdf`;
-      pdf.save(fileName);
+      generatePdfFromCanvas(canvas);
     } catch (error) {
-      console.error('Error generating direct PDF:', error);
-      alert('Não foi possível gerar o PDF direto. Siga as instruções abaixo para salvar usando a opção de Imprimir.');
+      console.warn('First premium PDF export attempt blocked or failed, retrying with fail-safe fallback...', error);
+      
+      // Secondary fallback attempt: disables CORS and strips external image headers entirely to prevent tainted canvas blockages
+      try {
+        const canvasFallback = await html2canvas(element, {
+          scale: 2.0,
+          useCORS: false,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 800,
+          onclone: (clonedDoc) => {
+            // Hide any external images that contaminate canvas security headers
+            const images = clonedDoc.querySelectorAll('img');
+            images.forEach(img => {
+              img.style.display = 'none';
+            });
+
+            const newStyleTag = clonedDoc.createElement('style');
+            newStyleTag.textContent = `
+              :root, [data-theme] {
+                --color-orange-500: #f97316 !important;
+                --color-orange-600: #ea580c !important;
+                --color-gray-100: #f3f4f6 !important;
+                --color-gray-800: #1f2937 !important;
+                --background: #ffffff !important;
+                --foreground: #111827 !important;
+              }
+              body, html {
+                background-color: #ffffff !important;
+                color: #111827 !important;
+                font-family: Arial, sans-serif !important;
+              }
+            `;
+            clonedDoc.head.appendChild(newStyleTag);
+          }
+        });
+
+        generatePdfFromCanvas(canvasFallback);
+      } catch (fallbackError) {
+        console.error('Second fail-safe PDF export also failed:', fallbackError);
+        alert('Não foi possível fazer o download direto devido a restrições do seu navegador. Por favor, clique na opção "Imprimir / Salvar Manual" e selecione "Salvar como PDF" no destino da impressão.');
+      }
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -270,16 +332,83 @@ export default function QuotationPrintView({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" id="print-preview-modal">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden print:max-h-none print:shadow-none print:rounded-none">
+      
+      {/* Inject custom responsive printing control rules based on selections */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: ${compactLayout ? '5mm 6mm' : '15mm 15mm'} !important;
+          }
+          body {
+            background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          #print-preview-modal {
+            background: white !important;
+            padding: 0 !important;
+          }
+          #print-sheet {
+            padding: 0 !important;
+            background: white !important;
+            overflow: visible !important;
+          }
+          #pdf-content {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            background: white !important;
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+          }
+          ${compactLayout ? `
+            * {
+              font-size: 11px !important;
+              line-height: 1.15 !important;
+            }
+            h1 { font-size: 16px !important; }
+            h2 { font-size: 14px !important; }
+            h3 { font-size: 11px !important; }
+            h4 { font-size: 11px !important; }
+            .badge-status { font-size: 9px !important; padding: 1px 4px !important; }
+            tr, td, th {
+              padding-top: 3px !important;
+              padding-bottom: 3px !important;
+              padding-left: 6px !important;
+              padding-right: 6px !important;
+            }
+            .sketch-item-box {
+              padding: 4px !important;
+            }
+            .sketch-svg-wrapper svg {
+              transform: scale(0.85);
+              transform-origin: center;
+            }
+          ` : ''}
+        }
+      `}</style>
+
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl overflow-hidden print:max-h-none print:shadow-none print:rounded-none">
         
         {/* Modal Controls - Hidden during Printing */}
         <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50 print:hidden gap-3">
           <div className="flex items-center gap-2">
             <FileText className="text-orange-600" size={20} />
-            <span className="font-semibold text-gray-800 text-xs md:text-sm">Visualização de Impressão & Exportação PDF</span>
+            <span className="font-semibold text-gray-800 text-xs md:text-sm">Configurar & Compartilhar Orçamento</span>
           </div>
           
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleWhatsAppShare}
+              className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3.5 rounded-lg shadow-sm transition-all cursor-pointer"
+            >
+              <MessageSquare size={14} /> Enviar WhatsApp
+            </button>
             <button
               onClick={handleExtendAndExportPDF}
               disabled={isGeneratingPDF}
@@ -303,45 +432,80 @@ export default function QuotationPrintView({
           </div>
         </div>
 
+        {/* Real-time custom control bar */}
+        <div className="bg-gray-100 border-b border-gray-200/60 px-6 py-2.5 print:hidden flex flex-wrap items-center gap-5 text-xs text-gray-700">
+          <span className="font-bold text-gray-800 uppercase text-[10px] tracking-wider">Ajustes da Folha A4:</span>
+          
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input 
+              type="checkbox" 
+              checked={compactLayout} 
+              onChange={(e) => setCompactLayout(e.target.checked)}
+              className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
+            />
+            <span>Forçar 1 Folha (Layout Compacto)</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input 
+              type="checkbox" 
+              checked={includeSketches} 
+              onChange={(e) => setIncludeSketches(e.target.checked)}
+              className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
+            />
+            <span>Incluir Croquis de Vidros</span>
+          </label>
+        </div>
+
         {/* Dynamic PDF Helper Banner */}
-        <div className="bg-orange-50 border-b border-orange-100/50 px-6 py-3.5 print:hidden">
-          <div className="flex items-start gap-2.5 max-w-4xl">
-            <span className="text-base select-none">💡</span>
+        <div className="bg-orange-50 border-b border-orange-100/50 px-6 py-3 print:hidden">
+          <div className="flex items-start gap-2 max-w-4xl">
+            <span className="text-sm select-none">💡</span>
             <div>
-              <p className="text-[11px] font-bold text-orange-900 leading-tight">Melhores práticas para exportar o Orçamento:</p>
-              <p className="text-[10px] text-orange-700 leading-relaxed mt-0.5">
-                Clique em <strong className="text-orange-950 font-bold">"Salvar como PDF"</strong> para baixar o arquivo no seu dispositivo imediatamente. Caso prefira a opção <strong className="text-orange-950 font-bold">"Imprimir"</strong>, mude o destino para "Salvar como PDF" e lembre-se de ativar a caixa <strong className="text-orange-950 font-bold">"Gráficos de segundo plano"</strong> para incluir cores e desenhos na versão final!
+              <p className="text-[10px] font-bold text-orange-900 leading-none">Melhores práticas para exportação:</p>
+              <p className="text-[9px] text-orange-700 leading-relaxed mt-0.5">
+                Utilize o botão <strong className="text-orange-950 font-bold">"Salvar como PDF"</strong> para baixar o arquivo otimizado em exatamente uma folha. Se precisar enviar por celular, use o botão verde <strong className="text-orange-950 font-bold">"Enviar WhatsApp"</strong>!
               </p>
             </div>
           </div>
         </div>
 
         {/* Printable area */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white print:overflow-visible print:p-0" id="print-sheet">
-          <div id="pdf-content" className="max-w-[780px] mx-auto text-gray-800 space-y-6 font-sans p-6 bg-white border border-gray-100 rounded-lg shadow-2xs print:border-none print:shadow-none">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 print:overflow-visible print:p-0 print:bg-white" id="print-sheet">
+          <div id="pdf-content" className={`max-w-[780px] mx-auto text-gray-800 font-sans bg-white border border-gray-100 rounded-lg shadow-2xs print:border-none print:shadow-none ${
+            compactLayout ? 'space-y-3.5 p-5 pb-3.5' : 'space-y-6 p-6 pb-6'
+          }`}>
             
             {/* Top decorative bar */}
-            <div className="bg-gradient-to-r from-orange-500 to-amber-600 h-2.5 rounded-t-md -mx-6 -mt-6 mb-4"></div>
+            <div className={`bg-gradient-to-r from-orange-500 to-amber-600 rounded-t-md -mx-5 mb-3.5 ${
+              compactLayout ? 'h-1.5 -mt-5' : 'h-2.5 -mt-6'
+            }`}></div>
 
             {/* 1. Letterhead Header */}
-            <div className="flex justify-between items-start border-b border-gray-200 pb-5">
-              <div className="flex items-start gap-4">
+            <div className={`flex justify-between items-start border-b border-gray-200 ${
+              compactLayout ? 'pb-2.5' : 'pb-5'
+            }`}>
+              <div className="flex items-start gap-3">
                 {companySettings.logoUrl && (
                   <img
                     src={companySettings.logoUrl}
                     alt="Logo"
-                    className="max-h-16 max-w-[140px] object-contain rounded-lg border border-gray-200 p-1 bg-white"
+                    className={`object-contain rounded-lg border border-gray-200 p-0.5 bg-white ${
+                      compactLayout ? 'max-h-11 max-w-[110px]' : 'max-h-16 max-w-[140px]'
+                    }`}
                     referrerPolicy="no-referrer"
                   />
                 )}
-                <div className="border-l-2 border-orange-500 pl-3">
-                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight uppercase leading-none mb-1">
+                <div className="border-l-2 border-orange-500 pl-2.5">
+                  <h1 className={`font-extrabold text-slate-900 tracking-tight uppercase leading-none mb-1 ${
+                    compactLayout ? 'text-base' : 'text-xl'
+                  }`}>
                     {companySettings.name || 'Vidraçaria & Cia'}
                   </h1>
-                  <p className="text-[10px] uppercase font-bold text-orange-600 tracking-wider">
+                  <p className="text-[9px] uppercase font-bold text-orange-600 tracking-wider">
                     {companySettings.slogan || 'Serralheria & Vidros sob Medida'}
                   </p>
-                  <div className="text-[10px] text-slate-500 mt-2.5 space-y-0.5">
+                  <div className="text-[9px] text-slate-500 mt-2 space-y-0.5">
                     <p>WhatsApp: <strong className="text-slate-800">{companySettings.phone || '(11) 99999-8888'}</strong></p>
                     <p>E-mail: <strong className="text-slate-800">{companySettings.email || 'contato@vidracariacia.com.br'}</strong></p>
                     {companySettings.cnpj && <p>CNPJ: <strong className="text-slate-800">{companySettings.cnpj}</strong></p>}
@@ -351,7 +515,7 @@ export default function QuotationPrintView({
               
               <div className="text-right space-y-1">
                 <div>
-                  <span className={`inline-block text-[9px] font-bold px-3 py-1 rounded-sm uppercase ${
+                  <span className={`inline-block text-[8px] font-bold px-2 py-0.5 rounded-sm uppercase badge-status ${
                     quotation.status === 'aprovado' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
                     quotation.status === 'pendente' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                     quotation.status === 'rejeitado' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 
@@ -362,8 +526,8 @@ export default function QuotationPrintView({
                      quotation.status === 'rejeitado' ? 'Orçamento Recusado' : 'Serviço Concluído'}
                   </span>
                 </div>
-                <h2 className="text-lg font-black text-orange-600 tracking-tight leading-normal">{quotation.number}</h2>
-                <div className="text-[10px] text-slate-500 space-y-0.5">
+                <h2 className="text-base font-black text-orange-600 tracking-tight leading-none">{quotation.number}</h2>
+                <div className="text-[9px] text-slate-500 space-y-0.5">
                   <p>Emissão: <strong className="text-slate-800">{new Date(quotation.date).toLocaleDateString('pt-BR')}</strong></p>
                   <p>Validade: <strong className="text-slate-800">{new Date(quotation.validUntil).toLocaleDateString('pt-BR')}</strong></p>
                 </div>
@@ -371,37 +535,39 @@ export default function QuotationPrintView({
             </div>
 
             {/* 2. Client and Location Info */}
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 grid grid-cols-2 gap-4 text-xs">
+            <div className={`bg-slate-50 rounded-lg border border-slate-100 grid grid-cols-2 gap-4 text-[11px] ${
+              compactLayout ? 'p-2.5' : 'p-4'
+            }`}>
               <div className="border-r border-slate-200 pr-4">
-                <h3 className="font-bold text-slate-500 mb-1.5 uppercase tracking-wider text-[9px]">Cliente / Destinatário</h3>
-                <p className="font-bold text-slate-900 text-sm">{quotation.client.name}</p>
-                <p className="text-slate-500 mt-1">Telefone: <span className="text-slate-900 font-medium">{quotation.client.phone}</span></p>
+                <h3 className="font-bold text-slate-500 mb-0.5 uppercase tracking-wider text-[8px]">Cliente / Destinatário</h3>
+                <p className="font-bold text-slate-900 text-xs">{quotation.client.name}</p>
+                <p className="text-slate-500 mt-0.5">Telefone: <span className="text-slate-900 font-medium">{quotation.client.phone}</span></p>
                 {quotation.client.email && <p className="text-slate-500">Email: <span className="text-slate-900 font-medium">{quotation.client.email}</span></p>}
               </div>
-              <div className="pl-2">
-                <h3 className="font-bold text-slate-500 mb-1.5 uppercase tracking-wider text-[9px]">Endereço de Instalação</h3>
-                <p className="text-slate-900 font-semibold leading-relaxed">
+              <div className="pl-1">
+                <h3 className="font-bold text-slate-500 mb-0.5 uppercase tracking-wider text-[8px]">Endereço de Instalação</h3>
+                <p className="text-slate-900 font-semibold leading-normal">
                   {quotation.client.address || 'Não especificado (Retirada em Loja)'}
                 </p>
               </div>
             </div>
 
             {/* 3. Items and Services Table & Sketches */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Especificações dos Itens</h3>
-                <span className="text-[10px] font-semibold text-slate-400">Total de {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}</span>
+            <div className={compactLayout ? 'space-y-1.5' : 'space-y-3'}>
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                <h3 className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Especificações dos Itens</h3>
+                <span className="text-[9px] font-semibold text-slate-400">Total de {quotation.items.length} {quotation.items.length === 1 ? 'item' : 'itens'}</span>
               </div>
               
-              <table className="w-full text-left border-collapse text-xs border border-slate-150 rounded-lg overflow-hidden">
+              <table className="w-full text-left border-collapse text-[11px] border border-slate-150 rounded-lg overflow-hidden">
                 <thead>
                   <tr className="bg-slate-800 text-white font-bold border-b border-slate-800">
-                    <th className="py-2.5 px-3 w-10 text-center">Qtd</th>
-                    <th className="py-2.5 px-3">Local / Descrição do Item</th>
-                    <th className="py-2.5 px-3">Vidro & Acabamentos</th>
-                    <th className="py-2.5 px-3 text-center">Medidas (m)</th>
-                    <th className="py-2.5 px-3 text-right">Valor Un.</th>
-                    <th className="py-2.5 px-3 text-right">Valor Total</th>
+                    <th className={`w-10 text-center ${compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}`}>Qtd</th>
+                    <th className={compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}>Local / Descrição do Item</th>
+                    <th className={compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}>Vidro & Acabamentos</th>
+                    <th className={`text-center ${compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}`}>Medidas (m)</th>
+                    <th className={`text-right ${compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}`}>Valor Un.</th>
+                    <th className={`text-right ${compactLayout ? 'py-1.5 px-2' : 'py-2.5 px-3'}`}>Valor Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-150 text-slate-700 bg-white">
@@ -413,33 +579,33 @@ export default function QuotationPrintView({
 
                     return (
                       <tr key={item.id} className="align-top hover:bg-slate-50/20 even:bg-slate-50/10">
-                        <td className="py-3 px-3 font-bold text-center text-slate-900">{item.quantity}</td>
-                        <td className="py-3 px-3 space-y-1">
+                        <td className={`font-bold text-center text-slate-900 ${compactLayout ? 'py-1 px-2' : 'py-3 px-3'}`}>{item.quantity}</td>
+                        <td className={`space-y-0.5 ${compactLayout ? 'py-1 px-2' : 'py-3 px-3'}`}>
                           <p className="font-extrabold text-slate-900">{item.description}</p>
-                          <div className="text-[10px] text-slate-500 pl-1 space-y-0.5">
+                          <div className="text-[9px] text-slate-500 pl-1 space-y-0.5">
                             {kHardware && <p>• Ferragens: <span className="font-medium text-slate-700">{kHardware.name}</span></p>}
                             {aProfile && <p>• Alumínio: <span className="font-medium text-slate-700">{aProfile.name} ({item.aluminumMeters}m)</span></p>}
                           </div>
                         </td>
-                        <td className="py-3 px-3">
+                        <td className={compactLayout ? 'py-1 px-2' : 'py-3 px-3'}>
                           <div className="font-semibold text-slate-800 leading-tight">
                             {gPrice?.name} 
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">Cor: {gColor?.name || 'Incolor'}</div>
+                          <div className="text-[9px] text-slate-500">Cor: {gColor?.name || 'Incolor'}</div>
                           {item.useRoundedArea && (
-                            <span className="inline-block mt-1 text-[8px] bg-amber-50 text-amber-800 font-bold px-1 rounded-sm border border-amber-200/50">
-                              M² Arredondado (múltiplo 5cm)
+                            <span className="inline-block mt-0.5 text-[8px] bg-amber-50 text-amber-800 font-bold px-1 rounded-sm border border-amber-200/50">
+                              M² Arredondado
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-center space-y-0.5">
+                        <td className={`text-center space-y-0.5 ${compactLayout ? 'py-1 px-2' : 'py-3 px-3'}`}>
                           <p className="font-bold text-slate-800">{item.width.toFixed(2)} x {item.height.toFixed(2)} m</p>
-                          <p className="text-[10px] text-slate-500">({formatArea(item.calculatedArea)})</p>
+                          <p className="text-[9px] text-slate-500">({formatArea(item.calculatedArea)})</p>
                         </td>
-                        <td className="py-3 px-3 text-right font-medium text-slate-600">
+                        <td className={`text-right font-medium text-slate-600 ${compactLayout ? 'py-1 px-2' : 'py-3 px-3'}`}>
                           {formatCurrency(item.itemTotal / item.quantity)}
                         </td>
-                        <td className="py-3 px-3 text-right font-extrabold text-slate-900">
+                        <td className={`text-right font-extrabold text-slate-900 ${compactLayout ? 'py-1 px-2' : 'py-3 px-3'}`}>
                           {formatCurrency(item.itemTotal)}
                         </td>
                       </tr>
@@ -450,47 +616,53 @@ export default function QuotationPrintView({
             </div>
 
             {/* 3.5 Detailed Technical Sketches */}
-            <div className="pt-5 border-t border-slate-200">
-              <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-3">Desenhos Técnicos e Projetos</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {quotation.items.map((item, index) => {
-                  const gColor = glassColors.find(c => c.id === item.colorId);
-                  return (
-                    <div key={item.id} className="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50" style={{ pageBreakInside: 'avoid' }}>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-1">Item {index + 1}</p>
-                      <QuotationSketch
-                        description={item.description}
-                        width={item.width}
-                        height={item.height}
-                        glassColorName={gColor?.name || 'Incolor'}
-                        templateStyle={item.sketchTemplate || 'auto'}
-                      />
-                    </div>
-                  );
-                })}
+            {includeSketches && (
+              <div className={`border-t border-slate-200 ${compactLayout ? 'pt-2.5' : 'pt-5'}`}>
+                <h4 className="text-[9px] font-black text-slate-700 uppercase tracking-widest mb-1.5">Desenhos Técnicos e Projetos</h4>
+                <div className={`grid gap-2.5 ${compactLayout ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-3'}`}>
+                  {quotation.items.map((item, index) => {
+                    const gColor = glassColors.find(c => c.id === item.colorId);
+                    return (
+                      <div key={item.id} className="border border-slate-200 rounded-lg p-2 bg-slate-50/50 sketch-item-box" style={{ pageBreakInside: 'avoid' }}>
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Item {index + 1}</p>
+                        <div className="sketch-svg-wrapper flex items-center justify-center">
+                          <QuotationSketch
+                            description={item.description}
+                            width={item.width}
+                            height={item.height}
+                            glassColorName={gColor?.name || 'Incolor'}
+                            templateStyle={item.sketchTemplate || 'auto'}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 4. Financial Calculations Summary */}
-            <div className="flex justify-between items-start pt-5 border-t border-slate-200 gap-8" style={{ pageBreakInside: 'avoid' }}>
+            <div className="flex justify-between items-start border-t border-slate-200 gap-8" style={{ pageBreakInside: 'avoid' }}>
               <div className="flex-1 max-w-[420px]">
                 {quotation.notes ? (
-                  <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-200">
-                    <h4 className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">Observações Adicionais</h4>
-                    <p className="text-[10.5px] text-slate-600 leading-relaxed italic">
+                  <div className={`bg-slate-50 rounded-lg border border-slate-200 ${compactLayout ? 'p-2.5' : 'p-3.5'}`}>
+                    <h4 className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Observações Adicionais</h4>
+                    <p className="text-[10px] text-slate-600 leading-relaxed italic">
                       "{quotation.notes}"
                     </p>
                   </div>
                 ) : (
-                  <div className="text-[10px] text-slate-400 max-w-[300px]">
+                  <div className="text-[9px] text-slate-400 max-w-[300px] mt-2">
                     <p>Este orçamento é um documento comercial provisório. Caso aprovado, nossa equipe técnica confirmará todas as medidas in loco.</p>
                   </div>
                 )}
               </div>
               
-              <div className="w-[260px] bg-slate-50 rounded-lg p-3.5 border border-slate-200 text-xs text-right space-y-1.5">
+              <div className={`w-[250px] bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-right space-y-1 ${
+                compactLayout ? 'p-2.5' : 'p-3.5'
+              }`}>
                 <div className="flex justify-between text-slate-500">
-                  <span>Subtotal dos Itens:</span>
+                  <span>Subtotal do Pedido:</span>
                   <span className="font-semibold text-slate-800">
                     {formatCurrency(
                       quotation.items.reduce((acc, i) => acc + i.itemTotal, 0)
@@ -512,9 +684,9 @@ export default function QuotationPrintView({
                   </div>
                 )}
 
-                <div className="flex justify-between pt-2 border-t border-slate-200 text-sm items-center">
+                <div className="flex justify-between pt-1 border-t border-slate-200 text-xs items-center">
                   <span className="font-bold text-slate-900">VALOR TOTAL LÍQUIDO:</span>
-                  <span className="font-black text-orange-600 text-base">
+                  <span className="font-black text-orange-600 text-sm">
                     {formatCurrency(quotation.total)}
                   </span>
                 </div>
@@ -522,34 +694,37 @@ export default function QuotationPrintView({
             </div>
 
             {/* 5. Terms / Signatures */}
-            <div className="pt-6 space-y-6 text-[10px] text-slate-500 border-t border-slate-200" style={{ pageBreakInside: 'avoid' }}>
-              <div className="leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                <p className="font-bold text-slate-700 mb-1">Termos Comerciais e Garantias:</p>
-                <ul className="list-disc pl-4 space-y-0.5">
-                  <li>Nossos vidros temperados seguem rigorosamente a norma <strong className="text-slate-700">ABNT NBR 14698</strong> de segurança.</li>
-                  <li>Garantia contra defeito de vedação de 90 dias. Acessórios e ferragens possuem garantia de 6 meses.</li>
-                  <li>A vidraçaria não se responsabiliza por problemas estruturais pré-existentes na alvenaria ou esquadrias limítrofes.</li>
-                  <li>Prazo médio para instalação após medição de engenharia no local: 10 a 15 dias úteis.</li>
+            <div className="text-[9px] text-slate-500 border-t border-slate-200 space-y-3.5" style={{ pageBreakInside: 'avoid' }}>
+              <div className="leading-relaxed bg-slate-50/50 p-2.5 rounded-lg border border-slate-100">
+                <p className="font-bold text-slate-700 mb-0.5">Termos Comerciais e Garantias:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-slate-500">
+                  <li>Nossos vidros temperados seguem a norma <strong className="text-slate-700">ABNT NBR 14698</strong> de segurança.</li>
+                  <li>Garantia comercial de estanqueidade de 90 dias. Ferragens têm garantia de 6 meses.</li>
+                  <li>Prazo de entrega médio: 10 a 15 dias úteis a contar da medição definitiva na obra.</li>
                 </ul>
               </div>
 
               {/* Signatures Columns */}
-              <div className="grid grid-cols-2 gap-12 pt-8">
+              <div className={`grid grid-cols-2 gap-8 ${
+                compactLayout ? 'pt-2' : 'pt-5'
+              }`}>
                 <div className="text-center">
-                  <div className="border-b border-slate-300 h-9 w-4/5 mx-auto"></div>
-                  <p className="mt-2 font-bold text-slate-800">{quotation.client.name}</p>
-                  <p className="text-[9px] text-slate-400">Assinatura de Aceite (Cliente)</p>
+                  <div className={`border-b border-slate-300 w-4/5 mx-auto ${compactLayout ? 'h-5' : 'h-8'}`}></div>
+                  <p className="mt-1 font-bold text-slate-800 text-[9px]">{quotation.client.name}</p>
+                  <p className="text-[8px] text-slate-400">Assinatura de Aceite (Cliente)</p>
                 </div>
                 <div className="text-center">
-                  <div className="border-b border-slate-300 h-9 w-4/5 mx-auto"></div>
-                  <p className="mt-2 font-bold text-slate-800">{companySettings.name || 'Vidraçaria & Cia'}</p>
-                  <p className="text-[9px] text-slate-400">Responsável Técnico / Autorizado</p>
+                  <div className={`border-b border-slate-300 w-4/5 mx-auto ${compactLayout ? 'h-5' : 'h-8'}`}></div>
+                  <p className="mt-1 font-bold text-slate-800 text-[9px]">{companySettings.name || 'Vidraçaria & Cia'}</p>
+                  <p className="text-[8px] text-slate-400">Responsável por Vidraçaria</p>
                 </div>
               </div>
             </div>
 
             {/* Footer metadata system code */}
-            <div className="text-center text-[8px] text-slate-400 pt-6 border-t border-slate-100">
+            <div className={`text-center text-[7.5px] text-slate-400 border-t border-slate-100 ${
+              compactLayout ? 'pt-2.5' : 'pt-4'
+            }`}>
               Sistema de Orçamentos Vidraçaria • Proposta técnica oficial gerada digitalmente em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
             </div>
 
