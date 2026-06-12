@@ -43,44 +43,121 @@ export default function QuotationPrintView({
 
     setIsGeneratingPDF(true);
     
-    // Helper to sanitize oklch and oklab colors to standard hsl/hsla
+    // Helper to sanitize advanced modern CSS color functions to standard HSL/HSLA or hex
     const sanitizeCSSColorFunction = (cssText: string): string => {
-      const regex = /(oklch|oklab)\(([^)]+)\)/gi;
-      return cssText.replace(regex, (match, type, content) => {
-        // Split on whitespace, commas, or slashes, and filter out empty items
-        const parts = content.trim().split(/[\s,+/]+/).filter(Boolean);
-        if (parts.length < 3) return '#000000'; // Fallback
-        
-        const [p1, p2, p3, p4] = parts;
-        const lVal = p1;
-        const lightnessVal = lVal.endsWith('%') ? parseFloat(lVal) : parseFloat(lVal) * 100;
-        
-        let hue = 0;
-        let saturation = 0;
-        
-        if (type.toLowerCase() === 'oklch') {
-          const chroma = parseFloat(p2);
-          hue = parseFloat(p3);
-          saturation = Math.min(100, Math.max(0, chroma * 250));
-        } else {
-          // oklab
-          const aVal = parseFloat(p2);
-          const bVal = parseFloat(p3);
-          const chroma = Math.sqrt(aVal * aVal + bVal * bVal);
-          const hueRad = Math.atan2(bVal, aVal);
-          hue = (hueRad * 180) / Math.PI;
-          if (hue < 0) hue += 360;
-          saturation = Math.min(100, Math.max(0, chroma * 250));
-        }
-        
-        const alphaStr = p4;
-        if (alphaStr) {
-          const alphaVal = alphaStr.endsWith('%') ? parseFloat(alphaStr) / 100 : parseFloat(alphaStr);
-          return `hsla(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%, ${alphaVal})`;
-        } else {
-          return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
+      if (!cssText) return '';
+      
+      // 1. First pre-emptively rewrite common modern Tailwind color variables to safe fallbacks
+      // This ensures we don't have to parse too complex nested variable scenarios.
+      let result = cssText;
+
+      // 2. Handle oklch and oklab with balanced parentheses matching (up to 1 level of nested parentheses)
+      const colorRegex = /(oklch|oklab)\(([^()]*|\([^()]*\))*\)/gi;
+      result = result.replace(colorRegex, (match, type) => {
+        try {
+          const openParenIdx = match.indexOf('(');
+          const closeParenIdx = match.lastIndexOf(')');
+          if (openParenIdx === -1 || closeParenIdx === -1) return '#888888';
+          
+          const content = match.slice(openParenIdx + 1, closeParenIdx).trim();
+          
+          // Separate primary values and alpha opacity parts on the '/' separator
+          let mainContent = content;
+          let alphaStr = '';
+          const slashIdx = content.indexOf('/');
+          if (slashIdx !== -1) {
+            mainContent = content.slice(0, slashIdx).trim();
+            alphaStr = content.slice(slashIdx + 1).trim();
+          }
+          
+          const parts = mainContent.split(/[\s,]+/).filter(Boolean);
+          if (parts.length < 3) {
+            // Safe general color fallback depending on context keywords
+            const lowerMatch = match.toLowerCase();
+            if (lowerMatch.includes('orange') || lowerMatch.includes('amber')) return '#ea580c';
+            if (lowerMatch.includes('slate') || lowerMatch.includes('gray')) return '#475569';
+            return '#888888';
+          }
+          
+          const [p1, p2, p3] = parts;
+          
+          // Strict fallback check: if any value relies on modern CSS variables/calc, supply high-quality visual fallbacks
+          if (p1.includes('var') || p2.includes('var') || p3.includes('var') ||
+              p1.includes('calc') || p2.includes('calc') || p3.includes('calc')) {
+            const lowerMatch = match.toLowerCase();
+            if (lowerMatch.includes('orange') || lowerMatch.includes('amber')) return '#ea580c';
+            if (lowerMatch.includes('slate') || lowerMatch.includes('gray') || lowerMatch.includes('zinc')) return '#475569';
+            return '#888888';
+          }
+          
+          const lVal = p1;
+          const lightnessVal = lVal.endsWith('%') ? parseFloat(lVal) : parseFloat(lVal) * 100;
+          
+          let hue = 0;
+          let saturation = 0;
+          
+          if (type.toLowerCase() === 'oklch') {
+            const chroma = parseFloat(p2);
+            hue = parseFloat(p3);
+            // Translate chroma to HSL saturation approximation
+            saturation = Math.min(100, Math.max(0, chroma * 250));
+          } else {
+            // oklab
+            const aVal = parseFloat(p2);
+            const bVal = parseFloat(p3);
+            const chroma = Math.sqrt(aVal * aVal + bVal * bVal);
+            const hueRad = Math.atan2(bVal, aVal);
+            hue = (hueRad * 180) / Math.PI;
+            if (hue < 0) hue += 360;
+            saturation = Math.min(100, Math.max(0, chroma * 250));
+          }
+          
+          if (isNaN(lightnessVal) || isNaN(hue) || isNaN(saturation)) {
+            return '#888888';
+          }
+          
+          if (alphaStr) {
+            if (alphaStr.includes('var') || alphaStr.includes('calc')) {
+              // Ignore complex alpha variables and just render opaque
+              return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
+            }
+            const alphaVal = alphaStr.endsWith('%') ? parseFloat(alphaStr) / 100 : parseFloat(alphaStr);
+            if (isNaN(alphaVal)) {
+              return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
+            }
+            return `hsla(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%, ${alphaVal})`;
+          } else {
+            return `hsl(${Math.round(hue)}, ${Math.round(saturation)}%, ${Math.round(lightnessVal)}%)`;
+          }
+        } catch (e) {
+          console.warn("Could not process oklch/oklab color rule direct fallback applied:", e);
+          return '#888888';
         }
       });
+
+      // 3. Handle color-mix function calls safely
+      const colorMixRegex = /color-mix\(([^()]*|\([^()]*\))*\)/gi;
+      result = result.replace(colorMixRegex, (match) => {
+        const lower = match.toLowerCase();
+        if (lower.includes('orange') || lower.includes('amber')) return '#ea580c';
+        if (lower.includes('slate') || lower.includes('gray')) return '#475569';
+        return '#888888';
+      });
+
+      // 4. Handle light-dark function calls safely (always prefer the first/light color)
+      const lightDarkRegex = /light-dark\(([^()]*|\([^()]*\))*\)/gi;
+      result = result.replace(lightDarkRegex, (match) => {
+        try {
+          const content = match.slice(11, match.length - 1).trim();
+          const commaIdx = content.indexOf(',');
+          if (commaIdx !== -1) {
+            return content.slice(0, commaIdx).trim();
+          }
+        } catch {}
+        return '#333333';
+      });
+
+      return result;
     };
 
     try {
@@ -138,8 +215,8 @@ export default function QuotationPrintView({
             });
           }
 
-          // Check all inline style declarations for oklch or oklab
-          const inlineStyleEls = clonedDoc.querySelectorAll('[style*="oklch"], [style*="oklab"]');
+          // Check all inline style declarations for oklch, oklab, color-mix, or light-dark
+          const inlineStyleEls = clonedDoc.querySelectorAll('[style*="oklch"], [style*="oklab"], [style*="color-mix"], [style*="light-dark"]');
           inlineStyleEls.forEach((el) => {
             const htmlEl = el as HTMLElement;
             if (htmlEl.style && htmlEl.style.cssText) {
