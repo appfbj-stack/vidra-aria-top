@@ -81,3 +81,14 @@ export interface Quotation {
   status: QuotationStatus;
   total: number;
 }
+
+export interface CompanySettings {
+  name: string;
+  slogan: string;
+  phone: string;
+  email: string;
+  address: string;
+  cnpj: string;
+  logoUrl: string; // Base64 or standard logo URL
+}
+

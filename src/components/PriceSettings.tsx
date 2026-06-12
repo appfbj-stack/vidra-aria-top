@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { GlassPrice, GlassColor, HardwareKit, AluminumProfile } from '../types';
-import { Edit2, Save, X, Plus, Trash2, Shield, Palette, Layers, Wrench } from 'lucide-react';
+import { GlassPrice, GlassColor, HardwareKit, AluminumProfile, CompanySettings } from '../types';
+import { Edit2, Save, X, Plus, Trash2, Shield, Palette, Layers, Wrench, Building, Upload } from 'lucide-react';
 import { formatCurrency } from '../utils';
 
 interface PriceSettingsProps {
@@ -13,11 +13,13 @@ interface PriceSettingsProps {
   glassColors: GlassColor[];
   hardwareKits: HardwareKit[];
   aluminumProfiles: AluminumProfile[];
+  companySettings: CompanySettings;
   
   onUpdateGlassPrices: (prices: GlassPrice[]) => void;
   onUpdateGlassColors: (colors: GlassColor[]) => void;
   onUpdateHardwareKits: (kits: HardwareKit[]) => void;
   onUpdateAluminumProfiles: (profiles: AluminumProfile[]) => void;
+  onUpdateCompanySettings: (settings: CompanySettings) => void;
 }
 
 export default function PriceSettings({
@@ -25,12 +27,14 @@ export default function PriceSettings({
   glassColors,
   hardwareKits,
   aluminumProfiles,
+  companySettings,
   onUpdateGlassPrices,
   onUpdateGlassColors,
   onUpdateHardwareKits,
   onUpdateAluminumProfiles,
+  onUpdateCompanySettings,
 }: PriceSettingsProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'glass' | 'colors' | 'hardware' | 'aluminum'>('glass');
+  const [activeSubTab, setActiveSubTab] = useState<'glass' | 'colors' | 'hardware' | 'aluminum' | 'header'>('header');
 
   // Input states for editing/adding
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,9 +174,17 @@ export default function PriceSettings({
       {/* Settings Sub Header tabs */}
       <div className="flex border-b border-gray-200 overflow-x-auto bg-gray-50/50">
         <button
+          onClick={() => { setActiveSubTab('header'); resetEdit(); }}
+          className={`flex items-center gap-2 py-3.5 px-5 text-sm font-medium transition-colors border-b-2 cursor-pointer whitespace-nowrap ${
+            activeSubTab === 'header' ? 'border-orange-600 text-orange-600 bg-white shadow-inner font-bold' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Building size={16} /> Cabeçalho do Orçamento (Logo & Empresa)
+        </button>
+        <button
           onClick={() => { setActiveSubTab('glass'); resetEdit(); }}
           className={`flex items-center gap-2 py-3.5 px-5 text-sm font-medium transition-colors border-b-2 cursor-pointer whitespace-nowrap ${
-            activeSubTab === 'glass' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeSubTab === 'glass' ? 'border-orange-600 text-orange-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <Shield size={16} /> Vidros (m²)
@@ -180,7 +192,7 @@ export default function PriceSettings({
         <button
           onClick={() => { setActiveSubTab('colors'); resetEdit(); }}
           className={`flex items-center gap-2 py-3.5 px-5 text-sm font-medium transition-colors border-b-2 cursor-pointer whitespace-nowrap ${
-            activeSubTab === 'colors' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeSubTab === 'colors' ? 'border-orange-600 text-orange-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <Palette size={16} /> Cores e Multiplicadores
@@ -188,7 +200,7 @@ export default function PriceSettings({
         <button
           onClick={() => { setActiveSubTab('hardware'); resetEdit(); }}
           className={`flex items-center gap-2 py-3.5 px-5 text-sm font-medium transition-colors border-b-2 cursor-pointer whitespace-nowrap ${
-            activeSubTab === 'hardware' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeSubTab === 'hardware' ? 'border-orange-600 text-orange-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <Layers size={16} /> Ferragens / Kits
@@ -196,7 +208,7 @@ export default function PriceSettings({
         <button
           onClick={() => { setActiveSubTab('aluminum'); resetEdit(); }}
           className={`flex items-center gap-2 py-3.5 px-5 text-sm font-medium transition-colors border-b-2 cursor-pointer whitespace-nowrap ${
-            activeSubTab === 'aluminum' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeSubTab === 'aluminum' ? 'border-orange-600 text-orange-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <Wrench size={16} /> Perfis de Alumínio (m)
@@ -204,21 +216,163 @@ export default function PriceSettings({
       </div>
 
       <div className="p-6">
+        {/* Header Configuration Panel */}
+        {activeSubTab === 'header' && (
+          <div className="space-y-6">
+            <div className="bg-orange-50 border border-orange-100/50 rounded-xl p-5 mb-2">
+              <h4 className="text-sm font-bold text-orange-950 flex items-center gap-1.5 mb-1.5">
+                <Building size={16} className="text-orange-600" /> Cabeçalho de Impressão de Contrato
+              </h4>
+              <p className="text-xs text-orange-700 leading-relaxed">
+                As informações abaixo e o logotipo serão impressos automaticamente no topo e rodapé de todos os seus orçamentos PDF. Certifique-se de preencher dados válidos para facilitar o contato de seus parceiros e clientes.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Form Fields (8 columns) */}
+              <div className="lg:col-span-8 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Nome Comercial / Empresa</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 font-semibold text-gray-800"
+                      placeholder="Ex: Blindex Temperados de São Paulo"
+                      value={companySettings.name}
+                      onChange={(e) => onUpdateCompanySettings({ ...companySettings, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">CNPJ ou CPF (Opcional)</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 text-gray-800"
+                      placeholder="Ex: 12.345.678/0001-99"
+                      value={companySettings.cnpj}
+                      onChange={(e) => onUpdateCompanySettings({ ...companySettings, cnpj: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Slogan Comercial / Especializações</label>
+                  <input
+                    type="text"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 text-gray-800"
+                    placeholder="Ex: Soluções sob medida em vidros, espelhos e esquadrias de alumínio"
+                    value={companySettings.slogan}
+                    onChange={(e) => onUpdateCompanySettings({ ...companySettings, slogan: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Telefone / WhatsApp Comercial</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 text-gray-800"
+                      placeholder="Ex: (11) 99999-8888"
+                      value={companySettings.phone}
+                      onChange={(e) => onUpdateCompanySettings({ ...companySettings, phone: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">E-mail de Contato</label>
+                    <input
+                      type="email"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 text-gray-800"
+                      placeholder="Ex: contato@suavidracaria.com.br"
+                      value={companySettings.email}
+                      onChange={(e) => onUpdateCompanySettings({ ...companySettings, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Endereço de Escritório/Loja</label>
+                  <input
+                    type="text"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 text-gray-800"
+                    placeholder="Ex: Av. Principal, 1500 - Centro - São Paulo - SP"
+                    value={companySettings.address}
+                    onChange={(e) => onUpdateCompanySettings({ ...companySettings, address: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Logo Upload Box (4 columns) */}
+              <div className="lg:col-span-4 bg-gray-50 border border-gray-150 rounded-xl p-4 flex flex-col items-center justify-center min-h-[220px]">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2.5 select-none">Logomarca do Orçamento</span>
+                
+                {companySettings.logoUrl ? (
+                  <div className="relative group flex flex-col items-center w-full">
+                    <img
+                      src={companySettings.logoUrl}
+                      alt="Logo da empresa"
+                      className="max-h-24 max-w-full object-contain bg-white p-2.5 rounded-lg border border-gray-200 shadow-xs mb-3.5"
+                      referrerPolicy="no-referrer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onUpdateCompanySettings({ ...companySettings, logoUrl: '' })}
+                      className="bg-red-50 text-red-600 hover:bg-red-100 text-[10px] font-bold py-1 px-3.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Remover Logo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center text-center justify-center space-y-2 w-full">
+                    <div className="border border-gray-300 hover:border-orange-500 rounded-xl p-6 w-full flex flex-col items-center justify-center bg-white cursor-pointer relative transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target?.result) {
+                                onUpdateCompanySettings({
+                                  ...companySettings,
+                                  logoUrl: event.target.result as string
+                                });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                      <Upload className="text-gray-400 mb-2" size={24} />
+                      <span className="text-xs font-semibold text-gray-700">Escolha um arquivo</span>
+                      <span className="text-[10px] text-gray-400 mt-1 block">PNG, JPG de até 2MB</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-3.5 text-[9px] text-gray-400 text-center leading-relaxed">
+                  A imagem do logotipo será renderizada automaticamente nos cabeçalhos impressos de PDF.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Table list */}
-        <div className="border border-gray-100 rounded-xl overflow-hidden mb-6 bg-white shadow-xs">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-4">Nome / Descrição</th>
-                <th className="py-3 px-4 w-40 text-right">
-                  {activeSubTab === 'colors' ? 'Multiplicador' : 'Preço Base'}
-                </th>
-                <th className="py-3 px-4 w-32 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-700">
-              {/* GLASS LIST */}
-              {activeSubTab === 'glass' && glassPrices.map((item) => (
+        {activeSubTab !== 'header' && (
+          <div className="border border-gray-100 rounded-xl overflow-hidden mb-6 bg-white shadow-xs">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                <tr>
+                  <th className="py-3 px-4">Nome / Descrição</th>
+                  <th className="py-3 px-4 w-40 text-right">
+                    {activeSubTab === 'colors' ? 'Multiplicador' : 'Preço Base'}
+                  </th>
+                  <th className="py-3 px-4 w-32 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-700">
+                {activeSubTab === 'glass' && glassPrices.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50/50">
                   <td className="py-3 px-4">
                     {editingId === item.id ? (
@@ -226,7 +380,7 @@ export default function PriceSettings({
                         type="text"
                         value={editNameStr}
                         onChange={(e) => setEditNameStr(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-blue-600 w-full"
+                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-orange-600 w-full"
                       />
                     ) : (
                       <span className="font-medium text-gray-800">{item.name}</span>
@@ -241,7 +395,7 @@ export default function PriceSettings({
                           step="0.01"
                           value={editPriceStr}
                           onChange={(e) => setEditPriceStr(e.target.value)}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-blue-600 w-24"
+                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-orange-600 w-24"
                         />
                         <span className="text-gray-400 text-xs">/m²</span>
                       </div>
@@ -275,7 +429,7 @@ export default function PriceSettings({
                             setEditNameStr(item.name);
                             setEditPriceStr(item.pricePerM2.toString());
                           }}
-                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1 text-gray-500 hover:text-orange-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 size={15} />
@@ -302,7 +456,7 @@ export default function PriceSettings({
                         type="text"
                         value={editNameStr}
                         onChange={(e) => setEditNameStr(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-blue-600 w-full"
+                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-orange-600 w-full"
                       />
                     ) : (
                       <span className="font-medium text-gray-800">{item.name}</span>
@@ -316,7 +470,7 @@ export default function PriceSettings({
                           step="0.01"
                           value={editMultiplierStr}
                           onChange={(e) => setEditMultiplierStr(e.target.value)}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-blue-600 w-24"
+                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-orange-600 w-24"
                         />
                         <span className="text-gray-400 text-xs">x</span>
                       </div>
@@ -350,7 +504,7 @@ export default function PriceSettings({
                             setEditNameStr(item.name);
                             setEditMultiplierStr(item.multiplier.toString());
                           }}
-                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1 text-gray-500 hover:text-orange-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 size={15} />
@@ -377,7 +531,7 @@ export default function PriceSettings({
                         type="text"
                         value={editNameStr}
                         onChange={(e) => setEditNameStr(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-blue-600 w-full"
+                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-orange-600 w-full"
                       />
                     ) : (
                       <span className="font-medium text-gray-800">{item.name}</span>
@@ -392,7 +546,7 @@ export default function PriceSettings({
                           step="0.01"
                           value={editPriceStr}
                           onChange={(e) => setEditPriceStr(e.target.value)}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-blue-600 w-24"
+                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-orange-600 w-24"
                         />
                         <span className="text-gray-400 text-xs">/un</span>
                       </div>
@@ -426,7 +580,7 @@ export default function PriceSettings({
                             setEditNameStr(item.name);
                             setEditPriceStr(item.price.toString());
                           }}
-                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1 text-gray-500 hover:text-orange-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 size={15} />
@@ -453,7 +607,7 @@ export default function PriceSettings({
                         type="text"
                         value={editNameStr}
                         onChange={(e) => setEditNameStr(e.target.value)}
-                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-blue-600 w-full"
+                        className="border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-hidden focus:border-orange-600 w-full"
                       />
                     ) : (
                       <span className="font-medium text-gray-800">{item.name}</span>
@@ -468,7 +622,7 @@ export default function PriceSettings({
                           step="0.01"
                           value={editPriceStr}
                           onChange={(e) => setEditPriceStr(e.target.value)}
-                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-blue-600 w-24"
+                          className="border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:outline-hidden focus:border-orange-600 w-24"
                         />
                         <span className="text-gray-400 text-xs">/m</span>
                       </div>
@@ -502,7 +656,7 @@ export default function PriceSettings({
                             setEditNameStr(item.name);
                             setEditPriceStr(item.pricePerMeter.toString());
                           }}
-                          className="p-1 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                          className="p-1 text-gray-500 hover:text-orange-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                           title="Editar"
                         >
                           <Edit2 size={15} />
@@ -522,12 +676,13 @@ export default function PriceSettings({
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Form to add elements */}
-        {editingId === null && (
+        {editingId === null && activeSubTab !== 'header' && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-              <Plus size={16} className="text-blue-600" /> Adicionar Novo Cadastro
+              <Plus size={16} className="text-orange-600" /> Adicionar Novo Cadastro
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
               <div className="md:col-span-6">
@@ -536,7 +691,7 @@ export default function PriceSettings({
                   placeholder="Nome do elemento (Ex: Temperado 12mm)"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-blue-600"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600"
                 />
               </div>
               <div className="md:col-span-4">
@@ -550,7 +705,7 @@ export default function PriceSettings({
                     placeholder={activeSubTab === 'colors' ? 'Multiplicador (Ex: 1.35)' : 'Preço de custo'}
                     value={newNum}
                     onChange={(e) => setNewNum(e.target.value)}
-                    className={`w-full text-xs border border-gray-200 rounded-lg py-2 focus:outline-hidden focus:border-blue-600 ${
+                    className={`w-full text-xs border border-gray-200 rounded-lg py-2 focus:outline-hidden focus:border-orange-600 ${
                       activeSubTab === 'colors' ? 'px-3' : 'pl-8 pr-3'
                     }`}
                   />
@@ -565,7 +720,7 @@ export default function PriceSettings({
                     if (activeSubTab === 'aluminum') addAluminumProfile();
                   }}
                   disabled={!newName.trim() || !newNum.trim()}
-                  className="w-full text-xs font-semibold bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 text-white rounded-lg py-2 px-3 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full text-xs font-semibold bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-orange-700 text-white rounded-lg py-2 px-3 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Plus size={14} /> Incluir
                 </button>

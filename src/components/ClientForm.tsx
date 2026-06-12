@@ -85,7 +85,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
           <h2 className="text-lg font-semibold text-gray-800">Clientes ({clients.length})</h2>
           <button
             onClick={startNew}
-            className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm transition-all duration-200 cursor-pointer"
+            className="flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white font-medium py-1.5 px-3 rounded-lg shadow-sm transition-all duration-200 cursor-pointer"
             id="btn-new-client"
           >
             <Plus size={14} /> Novo
@@ -100,7 +100,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
             placeholder="Buscar por nome, fone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
           />
         </div>
 
@@ -114,7 +114,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
             filteredClients.map((client) => (
               <div
                 key={client.id}
-                className="p-3 bg-gray-50 hover:bg-blue-50/50 rounded-lg border border-transparent hover:border-blue-200 transition-all duration-200 group flex items-start justify-between"
+                className="p-3 bg-gray-50 hover:bg-orange-50/50 rounded-lg border border-transparent hover:border-orange-200 transition-all duration-200 group flex items-start justify-between"
               >
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-gray-800 text-sm truncate">{client.name}</h3>
@@ -133,7 +133,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
                   <button
                     onClick={() => startEdit(client)}
-                    className="p-1 hover:bg-gray-200 text-gray-500 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
+                    className="p-1 hover:bg-gray-200 text-gray-500 hover:text-orange-600 rounded-md transition-colors cursor-pointer"
                     title="Editar Cliente"
                   >
                     <Edit2 size={13} />
@@ -190,7 +190,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                       placeholder="Ex: Carlos Eduardo de Oliveira"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
                     />
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                         placeholder="Ex: (11) 98765-4321"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
                       />
                     </div>
                   </div>
@@ -219,7 +219,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                         placeholder="Ex: cliente@email.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
                       />
                     </div>
                   </div>
@@ -234,7 +234,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                       placeholder="Ex: Av. Paulista, 1200 - Apto 34 - São Paulo - SP"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600"
                     />
                   </div>
                 </div>
@@ -242,7 +242,7 @@ export default function ClientForm({ clients, onAddClient, onUpdateClient, onDel
                 <div className="pt-4">
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm flex items-center justify-center gap-1.5"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm flex items-center justify-center gap-1.5"
                   >
                     {editingClient ? 'Salvar Alterações' : 'Confirmar Cadastro'}
                   </button>

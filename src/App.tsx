@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Client, GlassPrice, GlassColor, HardwareKit, AluminumProfile, Quotation, QuotationStatus } from './types';
+import { Client, GlassPrice, GlassColor, HardwareKit, AluminumProfile, Quotation, QuotationStatus, CompanySettings } from './types';
 import {
   DEFAULT_GLASS_PRICES,
   DEFAULT_GLASS_COLORS,
@@ -56,6 +56,26 @@ export default function App() {
     return saved ? JSON.parse(saved) : DEFAULT_QUOTATIONS;
   });
 
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(() => {
+    const saved = localStorage.getItem('vidr_company_settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // use fallback
+      }
+    }
+    return {
+      name: 'Vidraçaria & Cia',
+      slogan: 'Soluções sob medida em vidros temperados, laminados, espelhos e esquadrias de alumínio.',
+      phone: '(11) 99999-8888',
+      email: 'contato@vidracariacia.com.br',
+      address: 'Av. Principal, 1500 - Centro - São Paulo - SP',
+      cnpj: '12.345.678/0001-99',
+      logoUrl: '',
+    };
+  });
+
   // UI state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'new_quotation' | 'clients' | 'prices'>('dashboard');
   const [printQuotation, setPrintQuotation] = useState<Quotation | null>(null);
@@ -84,6 +104,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('vidr_quotations', JSON.stringify(quotations));
   }, [quotations]);
+
+  useEffect(() => {
+    localStorage.setItem('vidr_company_settings', JSON.stringify(companySettings));
+  }, [companySettings]);
 
   // 3. Actions / Handlers
   const handleAddClient = (newClient: Client) => {
@@ -125,6 +149,7 @@ export default function App() {
             glassColors={glassColors}
             hardwareKits={hardwareKits}
             aluminumProfiles={aluminumProfiles}
+            companySettings={companySettings}
             onClose={() => setPrintQuotation(null)}
           />
         )}
@@ -136,13 +161,13 @@ export default function App() {
           
           {/* Logo Brand */}
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2.5 rounded-lg text-white">
+            <div className="bg-orange-600 p-2.5 rounded-lg text-white">
               <Layers className="stroke-[2.5]" size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-gray-900">VidroGestão</h1>
-                <span className="bg-blue-50 text-blue-700 text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-md border border-blue-200 uppercase">
+                <span className="bg-orange-50 text-orange-700 text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-md border border-orange-200 uppercase">
                   Gestão Pro
                 </span>
               </div>
@@ -154,7 +179,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab('new_quotation')}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-sm"
               id="btn-quick-new"
             >
               <Plus size={15} /> Novo Orçamento
@@ -170,7 +195,7 @@ export default function App() {
             onClick={() => setActiveTab('dashboard')}
             className={`flex items-center gap-2 py-4 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'dashboard'
-                ? 'border-blue-600 text-blue-600 bg-blue-50/40'
+                ? 'border-orange-600 text-orange-600 bg-orange-50/40'
                 : 'border-transparent text-gray-500 hover:text-gray-950 hover:bg-gray-50/50'
             }`}
           >
@@ -181,7 +206,7 @@ export default function App() {
             onClick={() => setActiveTab('new_quotation')}
             className={`flex items-center gap-2 py-4 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'new_quotation'
-                ? 'border-blue-600 text-blue-600 bg-blue-50/40'
+                ? 'border-orange-600 text-orange-600 bg-orange-50/40'
                 : 'border-transparent text-gray-500 hover:text-gray-950 hover:bg-gray-50/50'
             }`}
           >
@@ -192,7 +217,7 @@ export default function App() {
             onClick={() => setActiveTab('clients')}
             className={`flex items-center gap-2 py-4 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'clients'
-                ? 'border-blue-600 text-blue-600 bg-blue-50/40'
+                ? 'border-orange-600 text-orange-600 bg-orange-50/40'
                 : 'border-transparent text-gray-500 hover:text-gray-950 hover:bg-gray-50/50'
             }`}
           >
@@ -203,11 +228,11 @@ export default function App() {
             onClick={() => setActiveTab('prices')}
             className={`flex items-center gap-2 py-4 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap ${
               activeTab === 'prices'
-                ? 'border-blue-600 text-blue-600 bg-blue-50/40'
+                ? 'border-orange-600 text-orange-600 bg-orange-50/40'
                 : 'border-transparent text-gray-500 hover:text-gray-950 hover:bg-gray-50/50'
             }`}
           >
-            <Sliders size={15} /> Tabela de Preços
+            <Sliders size={15} /> Configurações & Preços
           </button>
         </div>
       </nav>
@@ -290,18 +315,20 @@ export default function App() {
             {activeTab === 'prices' && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800 font-sans">Ajuste de Preços de Custo e Variáveis</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">Personalize o valor do metro quadrado dos vidros, multiplicadores das cores, preços dos perfis e kits de ferragens padrão.</p>
+                  <h2 className="text-xl font-bold text-gray-800 font-sans">Ajuste de Preços de Custo e Configuração do Cabeçalho</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Configure os dados empresariais da sua vidraçaria, faça upload da sua logomarca, e personalize o valor das ferragens, vidros e perfis de alumínio.</p>
                 </div>
                 <PriceSettings
                   glassPrices={glassPrices}
                   glassColors={glassColors}
                   hardwareKits={hardwareKits}
                   aluminumProfiles={aluminumProfiles}
+                  companySettings={companySettings}
                   onUpdateGlassPrices={setGlassPrices}
                   onUpdateGlassColors={setGlassColors}
                   onUpdateHardwareKits={setHardwareKits}
                   onUpdateAluminumProfiles={setAluminumProfiles}
+                  onUpdateCompanySettings={setCompanySettings}
                 />
               </div>
             )}

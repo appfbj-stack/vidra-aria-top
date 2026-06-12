@@ -45,7 +45,7 @@ export default function QuotationList({
       case 'rejeitado':
         return 'bg-red-50 text-red-700 border-red-200/60';
       case 'concluido':
-        return 'bg-blue-50 text-blue-700 border-blue-200/60';
+        return 'bg-orange-50 text-orange-700 border-orange-200/60';
     }
   };
 
@@ -58,7 +58,7 @@ export default function QuotationList({
       case 'rejeitado':
         return <XCircle size={12} className="text-red-500" />;
       case 'concluido':
-        return <CheckCircle size={12} className="text-blue-500" />;
+        return <CheckCircle size={12} className="text-orange-500" />;
     }
   };
 
@@ -75,7 +75,7 @@ export default function QuotationList({
             placeholder="Buscar por cliente ou código..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 bg-white"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:border-orange-600 focus:ring-1 focus:ring-orange-600 bg-white"
           />
         </div>
 
@@ -85,7 +85,7 @@ export default function QuotationList({
             onClick={() => setStatusFilter('all')}
             className={`cursor-pointer px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap ${
               statusFilter === 'all'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -115,7 +115,7 @@ export default function QuotationList({
             onClick={() => setStatusFilter('concluido')}
             className={`cursor-pointer px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all whitespace-nowrap ${
               statusFilter === 'concluido'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -147,7 +147,7 @@ export default function QuotationList({
             <tbody className="divide-y divide-gray-100 text-gray-700 bg-white">
               {filteredQuotations.map((quotation) => (
                 <tr key={quotation.id} className="hover:bg-gray-50/40 transition-colors">
-                  <td className="py-4 px-5 font-bold text-blue-600">
+                  <td className="py-4 px-5 font-bold text-orange-600">
                     {quotation.number}
                   </td>
                   <td className="py-4 px-5">

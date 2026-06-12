@@ -38,7 +38,7 @@ export default function DashboardStats({ quotations }: DashboardStatsProps) {
             {totalCount} {totalCount === 1 ? 'orçamento emitido' : 'orçamentos emitidos'}
           </span>
         </div>
-        <div className="bg-blue-600 p-2.5 rounded-lg text-white">
+        <div className="bg-orange-600 p-2.5 rounded-lg text-white">
           <DollarSign size={20} />
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function DashboardStats({ quotations }: DashboardStatsProps) {
             </span>
           </div>
         </div>
-        <div className="bg-blue-50 p-2.5 rounded-lg text-blue-600">
+        <div className="bg-orange-50 p-2.5 rounded-lg text-orange-600">
           <Percent size={20} />
         </div>
       </div>

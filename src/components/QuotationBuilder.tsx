@@ -216,7 +216,7 @@ export default function QuotationBuilder({
               <select
                 value={selectedClientId}
                 onChange={(e) => setSelectedClientId(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
               >
                 {clients.length === 0 ? (
                   <option value="">Nenhum cliente cadastrado. Crie um na aba de clientes.</option>
@@ -234,7 +234,7 @@ export default function QuotationBuilder({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-blue-600 bg-white"
+                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-orange-600 bg-white"
               />
             </div>
 
@@ -244,7 +244,7 @@ export default function QuotationBuilder({
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-blue-600 bg-white"
+                className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-orange-600 bg-white"
               />
             </div>
           </div>
@@ -269,7 +269,7 @@ export default function QuotationBuilder({
                     placeholder="Ex: Box Suite Master, Janela Basculante"
                     value={itemDescription}
                     onChange={(e) => setItemDescription(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-hidden focus:border-orange-600 bg-white"
                     required
                   />
                 </div>
@@ -280,7 +280,7 @@ export default function QuotationBuilder({
                     <select
                       value={itemGlassId}
                       onChange={(e) => setItemGlassId(e.target.value)}
-                      className="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
                     >
                       {glassPrices.map(g => (
                         <option key={g.id} value={g.id}>{g.name}</option>
@@ -292,7 +292,7 @@ export default function QuotationBuilder({
                     <select
                       value={itemColorId}
                       onChange={(e) => setItemColorId(e.target.value)}
-                      className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
                     >
                       {glassColors.map(c => (
                         <option key={c.id} value={c.id}>{c.name} ({c.multiplier === 1.0 ? 'Base' : `+${Math.round((c.multiplier - 1) * 100)}%`})</option>
@@ -304,7 +304,7 @@ export default function QuotationBuilder({
                     <select
                       value={itemSketchTemplate}
                       onChange={(e) => setItemSketchTemplate(e.target.value as any)}
-                      className="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                      className="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
                     >
                       <option value="auto">Auto (Detectar)</option>
                       <option value="box">Box (Banheiro)</option>
@@ -328,7 +328,7 @@ export default function QuotationBuilder({
                     min="0.10"
                     value={itemWidth}
                     onChange={(e) => setItemWidth(parseFloat(e.target.value) || 0)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-orange-600 bg-white"
                   />
                 </div>
 
@@ -340,7 +340,7 @@ export default function QuotationBuilder({
                     min="0.10"
                     value={itemHeight}
                     onChange={(e) => setItemHeight(parseFloat(e.target.value) || 0)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-orange-600 bg-white"
                   />
                 </div>
 
@@ -351,7 +351,7 @@ export default function QuotationBuilder({
                     min="1"
                     value={itemQuantity}
                     onChange={(e) => setItemQuantity(parseInt(e.target.value, 10) || 1)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-blue-600 bg-white shadow-xs"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-orange-600 bg-white shadow-xs"
                   />
                 </div>
 
@@ -367,7 +367,7 @@ export default function QuotationBuilder({
                       type="checkbox"
                       checked={itemUseRounded}
                       onChange={(e) => setItemUseRounded(e.target.checked)}
-                      className="rounded-sm border-gray-300 text-blue-600 text-[10px]"
+                      className="rounded-sm border-gray-300 text-orange-600 text-[10px]"
                     />
                     <span className="text-[10px] text-gray-500 select-none">Passo redondo 5cm</span>
                   </label>
@@ -381,7 +381,7 @@ export default function QuotationBuilder({
                   <select
                     value={itemHardwareId}
                     onChange={(e) => setItemHardwareId(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
                   >
                     <option value="none">Nenhum - (Sem Ferragem)</option>
                     {hardwareKits.map(h => (
@@ -395,7 +395,7 @@ export default function QuotationBuilder({
                   <select
                     value={itemAluminumId}
                     onChange={(e) => setItemAluminumId(e.target.value)}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-blue-600 cursor-pointer"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-2 bg-white focus:outline-hidden focus:border-orange-600 cursor-pointer"
                   >
                     <option value="none">Nenhum - (Sem Perfil)</option>
                     {aluminumProfiles.map(p => (
@@ -413,7 +413,7 @@ export default function QuotationBuilder({
                     disabled={itemAluminumId === 'none'}
                     value={itemAluminumMeters}
                     onChange={(e) => setItemAluminumMeters(parseFloat(e.target.value) || 0)}
-                    className="w-full text-xs border border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed rounded-lg px-2.5 py-2 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed rounded-lg px-2.5 py-2 focus:outline-hidden focus:border-orange-600 bg-white"
                   />
                 </div>
               </div>
@@ -431,7 +431,7 @@ export default function QuotationBuilder({
                         min="0"
                         value={itemLaborPrice}
                         onChange={(e) => setItemLaborPrice(parseFloat(e.target.value) || 0)}
-                        className="w-full text-xs border border-gray-200 rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-hidden focus:border-blue-600 bg-white text-right"
+                        className="w-full text-xs border border-gray-200 rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-hidden focus:border-orange-600 bg-white text-right"
                       />
                     </div>
                   </div>
@@ -459,9 +459,9 @@ export default function QuotationBuilder({
                     <span className="block text-[10px] text-gray-400">Instalação</span>
                     <span className="text-gray-700">{formatCurrency(itemLaborPrice * itemQuantity)}</span>
                   </div>
-                  <div className="bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100/30">
-                    <span className="block text-[10px] text-blue-600 font-bold">Total do Item</span>
-                    <strong className="text-blue-700 text-sm">{formatCurrency(liveTotals.itemTotal)}</strong>
+                  <div className="bg-orange-50 py-1.5 px-3 rounded-lg border border-orange-100/30">
+                    <span className="block text-[10px] text-orange-600 font-bold">Total do Item</span>
+                    <strong className="text-orange-700 text-sm">{formatCurrency(liveTotals.itemTotal)}</strong>
                   </div>
                 </div>
               </div>
@@ -470,7 +470,7 @@ export default function QuotationBuilder({
                 <button
                   type="submit"
                   disabled={!itemGlassId || !itemColorId}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-semibold pb-2.5 pt-2.5 px-4 rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-semibold pb-2.5 pt-2.5 px-4 rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Plus size={14} /> Adicionar Item ao Orçamento
                 </button>
@@ -554,7 +554,7 @@ export default function QuotationBuilder({
                     min="0"
                     value={surchargeAmount || ''}
                     onChange={(e) => setSurchargeAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full text-xs border border-gray-200 rounded-lg pl-7 pr-2 py-1 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg pl-7 pr-2 py-1 focus:outline-hidden focus:border-orange-600 bg-white"
                   />
                 </div>
               </div>
@@ -567,7 +567,7 @@ export default function QuotationBuilder({
                     min="0"
                     value={discountAmount || ''}
                     onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full text-xs border border-gray-200 rounded-lg pl-7 pr-2 py-1 focus:outline-hidden focus:border-blue-600 bg-white"
+                    className="w-full text-xs border border-gray-200 rounded-lg pl-7 pr-2 py-1 focus:outline-hidden focus:border-orange-600 bg-white"
                   />
                 </div>
               </div>
@@ -579,14 +579,14 @@ export default function QuotationBuilder({
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg p-2 focus:outline-hidden focus:border-blue-600 bg-white"
+                className="w-full text-xs border border-gray-200 rounded-lg p-2 focus:outline-hidden focus:border-orange-600 bg-white"
                 placeholder="Insira detalhes de pagamento ou informações pós-venda..."
               />
             </div>
 
             {/* Calculations total footer */}
-            <div className="bg-blue-950 p-4 rounded-xl text-white">
-              <div className="flex justify-between items-center text-xs text-blue-200 mb-1">
+            <div className="bg-orange-950 p-4 rounded-xl text-white">
+              <div className="flex justify-between items-center text-xs text-orange-200 mb-1">
                 <span>Material & Peças:</span>
                 <span className="font-bold">
                   {formatCurrency(draftItems.reduce((acc, i) => acc + i.itemTotal, 0))}
@@ -604,8 +604,8 @@ export default function QuotationBuilder({
                   <span>-{formatCurrency(discountAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center pt-2 border-t border-blue-900 mt-2">
-                <span className="text-xs font-semibold text-blue-300 uppercase">Val. Líquido Total:</span>
+              <div className="flex justify-between items-center pt-2 border-t border-orange-900 mt-2">
+                <span className="text-xs font-semibold text-orange-350 uppercase">Val. Líquido Total:</span>
                 <span className="text-lg font-black text-white tracking-widest">
                   {formatCurrency(calculateGrandTotal())}
                 </span>
