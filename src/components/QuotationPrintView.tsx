@@ -48,30 +48,68 @@ export default function QuotationPrintView({
     }
 
     const itemsSummary = quotation.items
-      .map(item => `• *${item.quantity}x* ${item.description} _(${item.width.toFixed(2)}x${item.height.toFixed(2)}m)_`)
-      .join('\n');
+      .map((item) => {
+        const gPrice = glassPrices.find(g => g.id === item.glassId);
+        const gColor = glassColors.find(c => c.id === item.colorId);
+        const kHardware = hardwareKits.find(h => h.id === item.hardwareKitId);
+        const aProfile = aluminumProfiles.find(a => a.id === item.aluminumId);
+        let details = '';
+        if (kHardware) details += `\n   Ferragens: ${kHardware.name}`;
+        if (aProfile) details += `\n   Alumínio: ${aProfile.name} (${item.aluminumMeters}m)`;
+        details += `\n   Vidro: ${gPrice?.name || ''} | Cor: ${gColor?.name || 'Incolor'}`;
+        details += `\n   Medidas: ${item.width.toFixed(2)}x${item.height.toFixed(2)}m (${formatArea(item.calculatedArea)})`;
+        details += `\n   Valor: ${formatCurrency(item.itemTotal)}`;
+        return `• ${item.quantity}x ${item.description}${details}`;
+      })
+      .join('\n\n');
 
     const totalStr = formatCurrency(quotation.total);
     const subtotalStr = formatCurrency(subtotal);
-    const discountStr = quotation.discountAmount > 0 ? `\n- Desconto: ${formatCurrency(quotation.discountAmount)}` : '';
-    const surchargeStr = quotation.surchargeAmount > 0 ? `\n- Taxas/Adicionais: ${formatCurrency(quotation.surchargeAmount)}` : '';
+    const discountStr = quotation.discountAmount > 0 ? `\n   Desconto: -${formatCurrency(quotation.discountAmount)}` : '';
+    const surchargeStr = quotation.surchargeAmount > 0 ? `\n   Taxas: +${formatCurrency(quotation.surchargeAmount)}` : '';
 
-    const message = `*ORÇAMENTO - ${companySettings.name || 'Vidraçaria'}*\n` +
-      `Orçamento Nº: *${quotation.number}*\n` +
-      `Cliente: *${quotation.client.name}*\n` +
-      `Data de Emissão: *${new Date(quotation.date).toLocaleDateString('pt-BR')}*\n` +
-      `Validade da Proposta: *${new Date(quotation.validUntil).toLocaleDateString('pt-BR')}*\n\n` +
-      `*Descrição dos Itens:* \n${itemsSummary}\n\n` +
-      `*Resumo Financeiro:* \n` +
-      `- Subtotal: ${subtotalStr}` + 
+    const message = `🏢 *${companySettings.name || 'Vidraçaria'}*\n` +
+      `${companySettings.slogan || ''}\n` +
+      `📞 ${companySettings.phone || ''}\n` +
+      `✉️ ${companySettings.email || ''}\n` +
+      `📍 ${companySettings.address || ''}\n` +
+      `🔖 CNPJ: ${companySettings.cnpj || ''}\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `📄 *ORÇAMENTO Nº ${quotation.number}*\n` +
+      `📌 ${quotation.status === 'pendente' ? 'Pendente' : quotation.status === 'aprovado' ? 'Aprovado' : quotation.status === 'rejeitado' ? 'Recusado' : 'Concluído'}\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `👤 *Cliente:* ${quotation.client.name}\n` +
+      `📞 ${quotation.client.phone}\n` +
+      `📍 ${quotation.client.address || 'Não informado'}\n\n` +
+      `📅 Emissão: ${new Date(quotation.date).toLocaleDateString('pt-BR')}\n` +
+      `⏳ Validade: ${new Date(quotation.validUntil).toLocaleDateString('pt-BR')}\n\n` +
+      `📋 *ITENS:*\n${itemsSummary}\n\n` +
+      `💰 *RESUMO:*\n` +
+      `   Subtotal: ${subtotalStr}` + 
       surchargeStr +
       discountStr + `\n` +
-      `*VALOR TOTAL LÍQUIDO: ${totalStr}*\n\n` +
-      (quotation.notes ? `Observações: _${quotation.notes}_\n\n` : '') +
-      `Agradecemos a sua preferência! Se tiver alguma dúvida ou desejar aprovar, basta nos responder por aqui. Ficamos à disposição para agendar a medição final in loco! ⚒️`;
+      `   *TOTAL: ${totalStr}*\n\n` +
+      (quotation.notes ? `📝 ${quotation.notes}\n\n` : '') +
+      `✅ *Agradecemos a preferência!*`;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanedPhone}&text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Orçamento ${quotation.number}`,
+          text: `Orçamento ${quotation.number} - ${quotation.client.name}`,
+          url: window.location.href,
+        });
+      } catch (e) {
+        // user cancelled
+      }
+    } else {
+      handlePrint();
+    }
   };
 
   const handleExtendAndExportPDF = async () => {
@@ -396,79 +434,30 @@ export default function QuotationPrintView({
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] flex flex-col shadow-2xl overflow-hidden print:max-h-none print:shadow-none print:rounded-none">
         
         {/* Modal Controls - Hidden during Printing */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50 print:hidden gap-3">
-          <div className="flex items-center gap-2">
-            <FileText className="text-orange-600" size={20} />
-            <span className="font-semibold text-gray-800 text-xs md:text-sm">Configurar & Compartilhar Orçamento</span>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleWhatsAppShare}
-              className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3.5 rounded-lg shadow-sm transition-all cursor-pointer"
-            >
-              <MessageSquare size={14} /> Enviar WhatsApp
-            </button>
-            <button
-              onClick={handleExtendAndExportPDF}
-              disabled={isGeneratingPDF}
-              className="flex items-center gap-1.5 text-xs bg-orange-600 hover:bg-orange-700 disabled:bg-orange-300 text-white font-bold py-2 px-3.5 rounded-lg shadow-sm transition-all cursor-pointer"
-            >
-              <FileDown size={14} className={isGeneratingPDF ? 'animate-bounce' : ''} />
-              {isGeneratingPDF ? 'Gerando PDF...' : 'Salvar como PDF'}
-            </button>
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-3.5 rounded-lg border border-gray-200 shadow-2xs transition-all cursor-pointer"
-            >
-              <Printer size={14} /> Imprimir / Salvar Manual
-            </button>
-            <button
-              onClick={onClose}
-              className="flex items-center gap-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-xl transition-all cursor-pointer"
-            >
-              <X size={14} /> Fechar
-            </button>
-          </div>
+        <div className="flex flex-row items-center justify-end px-6 py-3 border-b border-gray-100 bg-gray-50 print:hidden gap-2">
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 text-xs bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-all cursor-pointer"
+          >
+            <Printer size={14} /> PDF
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-all cursor-pointer md:hidden"
+          >
+            <FileDown size={14} /> Compartilhar
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer"
+          >
+            <X size={14} /> Fechar
+          </button>
         </div>
+        
 
-        {/* Real-time custom control bar */}
-        <div className="bg-gray-100 border-b border-gray-200/60 px-6 py-2.5 print:hidden flex flex-wrap items-center gap-5 text-xs text-gray-700">
-          <span className="font-bold text-gray-800 uppercase text-[10px] tracking-wider">Ajustes da Folha A4:</span>
-          
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
-            <input 
-              type="checkbox" 
-              checked={compactLayout} 
-              onChange={(e) => setCompactLayout(e.target.checked)}
-              className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
-            />
-            <span>Forçar 1 Folha (Layout Compacto)</span>
-          </label>
 
-          <label className="flex items-center gap-2 cursor-pointer font-semibold">
-            <input 
-              type="checkbox" 
-              checked={includeSketches} 
-              onChange={(e) => setIncludeSketches(e.target.checked)}
-              className="rounded text-orange-600 focus:ring-orange-500 w-4 h-4 cursor-pointer"
-            />
-            <span>Incluir Croquis de Vidros</span>
-          </label>
-        </div>
 
-        {/* Dynamic PDF Helper Banner */}
-        <div className="bg-orange-50 border-b border-orange-100/50 px-6 py-3 print:hidden">
-          <div className="flex items-start gap-2 max-w-4xl">
-            <span className="text-sm select-none">💡</span>
-            <div>
-              <p className="text-[10px] font-bold text-orange-900 leading-none">Melhores práticas para exportação:</p>
-              <p className="text-[9px] text-orange-700 leading-relaxed mt-0.5">
-                Utilize o botão <strong className="text-orange-950 font-bold">"Salvar como PDF"</strong> para baixar o arquivo otimizado em exatamente uma folha. Se precisar enviar por celular, use o botão verde <strong className="text-orange-950 font-bold">"Enviar WhatsApp"</strong>!
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Printable area */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50 print:overflow-visible print:p-0 print:bg-white" id="print-sheet">

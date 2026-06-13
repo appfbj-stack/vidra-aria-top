@@ -13,6 +13,7 @@ import {
   DEFAULT_CLIENTS,
   DEFAULT_QUOTATIONS,
 } from './data/defaultData';
+import { fetchData, saveData } from './api';
 
 import DashboardStats from './components/DashboardStats';
 import QuotationList from './components/QuotationList';
@@ -79,6 +80,27 @@ export default function App() {
   // UI state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'new_quotation' | 'clients' | 'prices'>('dashboard');
   const [printQuotation, setPrintQuotation] = useState<Quotation | null>(null);
+  const [synced, setSynced] = useState(false);
+
+  // Load data from Google Sheets on mount
+  useEffect(() => {
+    async function loadCloud() {
+      const cloudClients = await fetchData('Clientes');
+      if (cloudClients.length > 0) setClients(cloudClients as Client[]);
+      const cloudPrices = await fetchData('PrecosVidros');
+      if (cloudPrices.length > 0) setGlassPrices(cloudPrices as GlassPrice[]);
+      const cloudColors = await fetchData('CoresVidros');
+      if (cloudColors.length > 0) setGlassColors(cloudColors as GlassColor[]);
+      const cloudHardware = await fetchData('KitsFerragens');
+      if (cloudHardware.length > 0) setHardwareKits(cloudHardware as HardwareKit[]);
+      const cloudProfiles = await fetchData('PerfisAluminio');
+      if (cloudProfiles.length > 0) setAluminumProfiles(cloudProfiles as AluminumProfile[]);
+      const cloudQuotations = await fetchData('Orcamentos');
+      if (cloudQuotations.length > 0) setQuotations(cloudQuotations as unknown as Quotation[]);
+      setSynced(true);
+    }
+    loadCloud();
+  }, []);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -117,31 +139,38 @@ export default function App() {
   // 2. Save state to localStorage automatically on changes
   useEffect(() => {
     localStorage.setItem('vidr_clients', JSON.stringify(clients));
-  }, [clients]);
+    if (synced) saveData('Clientes', clients);
+  }, [clients, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_glass_prices', JSON.stringify(glassPrices));
-  }, [glassPrices]);
+    if (synced) saveData('PrecosVidros', glassPrices);
+  }, [glassPrices, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_glass_colors', JSON.stringify(glassColors));
-  }, [glassColors]);
+    if (synced) saveData('CoresVidros', glassColors);
+  }, [glassColors, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_hardware_kits', JSON.stringify(hardwareKits));
-  }, [hardwareKits]);
+    if (synced) saveData('KitsFerragens', hardwareKits);
+  }, [hardwareKits, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_aluminum_profiles', JSON.stringify(aluminumProfiles));
-  }, [aluminumProfiles]);
+    if (synced) saveData('PerfisAluminio', aluminumProfiles);
+  }, [aluminumProfiles, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_quotations', JSON.stringify(quotations));
-  }, [quotations]);
+    if (synced) saveData('Orcamentos', quotations);
+  }, [quotations, synced]);
 
   useEffect(() => {
     localStorage.setItem('vidr_company_settings', JSON.stringify(companySettings));
-  }, [companySettings]);
+    if (synced) saveData('Empresa', [companySettings]);
+  }, [companySettings, synced]);
 
   // 3. Actions / Handlers
   const handleAddClient = (newClient: Client) => {
